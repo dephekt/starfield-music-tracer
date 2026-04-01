@@ -58,7 +58,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.UPSUN_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -t ed25519 git.eu-3.platform.sh >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -t ed25519 git.eu-3.platform.sh >> ~/.ssh/known_hosts 2>/dev/null || true
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.email "ci@stackdrift.org"
           git config user.name "Codeberg CI"

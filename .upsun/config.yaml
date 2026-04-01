@@ -12,7 +12,7 @@ applications:
         uv sync --frozen --no-dev
     web:
       commands:
-        start: uv run uvicorn main:app --host 0.0.0.0 --port $PORT
+        start: .venv/bin/uvicorn main:app --host 0.0.0.0 --port $PORT
     mounts: {}
 
 routes:

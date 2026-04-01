@@ -15,13 +15,13 @@ jobs:
       STARFIELD_DATA: /starfield/Data
       OST_DIR: /starfield/Music
     steps:
-      - uses: actions/checkout@v4
-
       - name: Install system deps
         run: >-
           apt-get update && apt-get install -y -q
           libchromaprint-tools libvorbisfile3 ffmpeg opus-tools
-          openssh-client git
+          openssh-client git nodejs
+
+      - uses: actions/checkout@v4
 
       - name: Install Python deps
         run: pip install uv && uv sync --frozen --extra fingerprint

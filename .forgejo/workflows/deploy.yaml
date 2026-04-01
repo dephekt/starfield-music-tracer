@@ -40,11 +40,17 @@ jobs:
           SITE_BASE_PATH: /starfield-music-tracer
 
       - name: Deploy to Codeberg Pages
-        uses: https://codeberg.org/git-pages/action@v2
-        with:
-          site: "https://${{ forge.repository_owner }}.codeberg.page/starfield-music-tracer/"
-          token: ${{ forge.token }}
-          source: _site/
+        run: |
+          set -ex
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.email "ci@stackdrift.org"
+          git config user.name "Codeberg CI"
+          cd _site
+          git init -b pages
+          git add .
+          git commit -m "deploy static site"
+          git remote add origin https://x-access-token:${{ forge.token }}@codeberg.org/${{ forge.repository }}.git
+          git push --force origin pages
 
       - name: Deploy to Upsun
         run: |

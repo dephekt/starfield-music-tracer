@@ -42,9 +42,9 @@ jobs:
       - name: Deploy to Codeberg Pages
         run: |
           set -ex
+          git config --global user.email "ci@stackdrift.org"
+          git config --global user.name "Codeberg CI"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git config user.email "ci@stackdrift.org"
-          git config user.name "Codeberg CI"
           cd _site
           git init -b pages
           git add .

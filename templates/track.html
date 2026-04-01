@@ -12,6 +12,14 @@
 <p class="subtitle mono">MTSH: {{ track.mtsh }}</p>
 {% endif %}
 
+{% if ost_match %}
+<div class="ost-badge">
+    <span class="ost-badge-label">Official Soundtrack</span><br>
+    <span class="ost-badge-title">{{ "%02d"|format(ost_match.track_number) }} &ndash; {{ ost_match.title }}</span>
+    <span class="ost-badge-confidence">({{ (ost_match.confidence * 100) | round(1) }}% match)</span>
+</div>
+{% endif %}
+
 {% if music_types %}
 <section class="related">
     <h2>Part of music type{{ "s" if music_types | length > 1 }}</h2>

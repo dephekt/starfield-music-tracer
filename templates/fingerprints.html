@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Fingerprint Matches - Starfield Music Tracer{% endblock %}
+
+{% block content %}
+<p class="back"><a href="/">&larr; All cells</a></p>
+
+<h1>Audio Fingerprint Matches</h1>
+<p class="subtitle">
+    Chromaprint acoustic fingerprinting: {{ matched_count }}/{{ total_ost }} OST tracks matched
+    to {{ game_count }} in-game music files
+</p>
+
+{% if not matches %}
+<div class="empty-state">
+    <p>No fingerprint data available. Run <code>fingerprint.py</code> to generate matches.</p>
+</div>
+{% else %}
+
+<section class="related">
+    <h2>Summary</h2>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-value">{{ high_count }}</span>
+            <span class="stat-label">High confidence (&ge;50%)</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ medium_count }}</span>
+            <span class="stat-label">Medium (25&ndash;50%)</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ low_count }}</span>
+            <span class="stat-label">Low (&lt;25%)</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ unmatched_count }}</span>
+            <span class="stat-label">Unmatched (&lt;15%)</span>
+        </div>
+    </div>
+</section>
+
+<section class="related">
+    <h2>All OST Matches <span class="count-badge">{{ matches | length }}</span></h2>
+    <div class="controls">
+        <input type="search" id="fp-search" placeholder="Filter by title or game file...">
+    </div>
+    <div class="table-wrap">
+        <table id="fp-table">
+            <thead>
+                <tr>
+                    <th class="sortable" data-sort="track" data-type="num"># <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-sort="title" data-type="str">OST Track <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-sort="game" data-type="str">Best Game Match <span class="sort-arrow"></span></th>
+                    <th class="sortable active-sort" data-sort="confidence" data-type="num">Confidence <span class="sort-arrow">&#9660;</span></th>
+                    <th class="sortable" data-sort="ost_dur" data-type="num">Duration (OST / Game) <span class="sort-arrow"></span></th>
+                    <th>Listen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in matches %}
+                <tr data-confidence="{{ m.confidence }}"
+                    data-track="{{ m.track_number }}"
+                    data-title="{{ m.title }}"
+                    data-game="{{ m.short_name }}"
+                    data-ost_dur="{{ m.ost_duration }}">
+                    <td class="mono">{{ m.track_number }}</td>
+                    <td>{{ m.title }}</td>
+                    <td>
+                        {% if m.wwise_name %}
+                        <span class="fp-game-name" title="{{ m.wwise_name }}">{{ m.short_name }}</span>
+                        <span class="cell-edid">ID: {{ m.wwise_id }}</span>
+                        {% else %}
+                        <span class="text-dim">(no match)</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="confidence-bar" style="--pct: {{ (m.confidence * 100) | round(1) }}%">
+                            <span class="confidence-fill {{ m.confidence_class }}"></span>
+                            <span class="confidence-text">{{ (m.confidence * 100) | round(1) }}%</span>
+                        </div>
+                    </td>
+                    <td class="mono">
+                        {{ m.ost_duration | round(1) }}s / {{ m.game_duration | round(1) }}s
+                    </td>
+                    <td>
+                        {% if m.has_clips %}
+                        <button class="compare-btn" data-track="{{ m.track_number }}">Compare</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if m.has_clips %}
+                <tr class="audio-row" id="audio-row-{{ m.track_number }}" hidden>
+                    <td colspan="6">
+                        <div class="audio-compare">
+                            <div class="audio-channel">
+                                <span class="audio-label">OST</span>
+                                <audio controls preload="none"
+                                    src="/static/clips/{{ "%02d"|format(m.track_number) }}_ost.opus"></audio>
+                            </div>
+                            <div class="audio-channel">
+                                <span class="audio-label">Game</span>
+                                <audio controls preload="none"
+                                    src="/static/clips/{{ "%02d"|format(m.track_number) }}_game.opus"></audio>
+                            </div>
+                            <button class="sync-btn" data-track="{{ m.track_number }}">Play Both</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% if unmatched_game %}
+<section class="related">
+    <h2>Unmatched Game Files <span class="count-badge">{{ unmatched_game | length }}</span></h2>
+    <p class="subtitle" style="margin-top: 0">Music .wem files (&gt;30s) not matched as best-match to any OST track</p>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Wwise ID</th>
+                    <th>Short Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for g in unmatched_game %}
+                <tr>
+                    <td class="mono">{{ g.wwise_id }}</td>
+                    <td>{{ g.short_name }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const search = document.getElementById('fp-search');
+const tbody = document.querySelector('#fp-table tbody');
+const headers = document.querySelectorAll('#fp-table th.sortable');
+let currentSort = 'confidence';
+let sortAsc = false;
+
+function getDataRows() {
+    return Array.from(tbody.querySelectorAll('tr[data-track]'));
+}
+
+function reorder() {
+    const rows = getDataRows();
+    const th = document.querySelector(`th[data-sort="${currentSort}"]`);
+    const type = th ? th.dataset.type : 'num';
+
+    rows.sort((a, b) => {
+        let va = a.dataset[currentSort] || '';
+        let vb = b.dataset[currentSort] || '';
+        if (type === 'num') {
+            va = parseFloat(va) || 0;
+            vb = parseFloat(vb) || 0;
+        } else {
+            va = va.toLowerCase();
+            vb = vb.toLowerCase();
+        }
+        if (va < vb) return sortAsc ? -1 : 1;
+        if (va > vb) return sortAsc ? 1 : -1;
+        return 0;
+    });
+    rows.forEach(r => {
+        tbody.appendChild(r);
+        const audioRow = document.getElementById('audio-row-' + r.dataset.track);
+        if (audioRow) tbody.appendChild(audioRow);
+    });
+
+    headers.forEach(h => {
+        h.classList.remove('active-sort');
+        h.querySelector('.sort-arrow').textContent = '';
+    });
+    if (th) {
+        th.classList.add('active-sort');
+        th.querySelector('.sort-arrow').textContent = sortAsc ? '\u25B2' : '\u25BC';
+    }
+}
+
+headers.forEach(th => {
+    th.addEventListener('click', () => {
+        const col = th.dataset.sort;
+        if (currentSort === col) {
+            sortAsc = !sortAsc;
+        } else {
+            currentSort = col;
+            sortAsc = col === 'track' || col === 'title' || col === 'game';
+        }
+        reorder();
+    });
+});
+
+if (search) {
+    search.addEventListener('input', () => {
+        const q = search.value.toLowerCase();
+        for (const row of getDataRows()) {
+            const show = row.textContent.toLowerCase().includes(q);
+            row.style.display = show ? '' : 'none';
+            const audioRow = document.getElementById('audio-row-' + row.dataset.track);
+            if (audioRow && !show) audioRow.hidden = true;
+        }
+    });
+}
+
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.compare-btn');
+    if (btn) {
+        const track = btn.dataset.track;
+        const row = document.getElementById('audio-row-' + track);
+        if (row) {
+            row.hidden = !row.hidden;
+            btn.textContent = row.hidden ? 'Compare' : 'Hide';
+        }
+    }
+
+    const syncBtn = e.target.closest('.sync-btn');
+    if (syncBtn) {
+        const track = syncBtn.dataset.track;
+        const row = document.getElementById('audio-row-' + track);
+        const audios = row.querySelectorAll('audio');
+        const allPlaying = Array.from(audios).every(a => !a.paused);
+        audios.forEach(a => {
+            if (allPlaying) {
+                a.pause();
+            } else {
+                a.currentTime = 0;
+                a.play();
+            }
+        });
+        syncBtn.textContent = allPlaying ? 'Play Both' : 'Stop Both';
+    }
+});
+</script>
+{% endblock %}

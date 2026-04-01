@@ -159,11 +159,138 @@ async def track_detail(request: Request, editor_id: str):
         WHERE mtt.must_form_id = ?
     """, (info["form_id"],)).fetchall()
 
+    ost_match = _get_ost_match(db, editor_id)
+
     return templates.TemplateResponse(request, "track.html", {
         "track": {"form_id": info["form_id"], "editor_id": info["editor_id"], "mtsh": info["mtsh"]},
         "editor_id": editor_id,
         "cells": cells,
         "music_types": music_types,
+        "ost_match": ost_match,
+    })
+
+
+def _has_table(db, table_name: str) -> bool:
+    row = db.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+        (table_name,),
+    ).fetchone()
+    return row is not None
+
+
+def _get_ost_match(db, track_editor_id: str):
+    """Return best OST match for a MUST track editor ID, or None."""
+    if not _has_table(db, "fingerprint_matches"):
+        return None
+    row = db.execute("""
+        SELECT fm.wwise_name, fm.confidence,
+               ot.track_number, ot.title, ot.duration_secs
+        FROM fingerprint_matches fm
+        JOIN ost_tracks ot ON fm.ost_track_number = ot.track_number
+        WHERE fm.wwise_name LIKE '%' || ? || '%'
+        ORDER BY fm.confidence DESC
+        LIMIT 1
+    """, (track_editor_id,)).fetchone()
+    if row is None:
+        return None
+    return {
+        "track_number": row["track_number"],
+        "title": row["title"],
+        "confidence": row["confidence"],
+        "ost_duration": row["duration_secs"],
+    }
+
+
+@app.get("/fingerprints", response_class=HTMLResponse)
+async def fingerprints_page(request: Request):
+    db = get_db()
+    if not _has_table(db, "fingerprint_matches"):
+        return templates.TemplateResponse(request, "fingerprints.html", {
+            "matches": [],
+            "matched_count": 0,
+            "total_ost": 0,
+            "game_count": 0,
+            "high_count": 0,
+            "medium_count": 0,
+            "low_count": 0,
+            "unmatched_count": 0,
+            "unmatched_game": [],
+        })
+
+    rows = db.execute("""
+        SELECT ot.track_number, ot.title, ot.duration_secs,
+               fm.wwise_id, fm.wwise_name, fm.confidence, fm.game_duration
+        FROM ost_tracks ot
+        LEFT JOIN fingerprint_matches fm ON ot.track_number = fm.ost_track_number
+        ORDER BY COALESCE(fm.confidence, 0) DESC
+    """).fetchall()
+
+    matches = []
+    for r in rows:
+        wwise_name = r["wwise_name"] or ""
+        short = wwise_name.rsplit("\\", 1)[-1].replace(".wav", "") if wwise_name else ""
+        conf = r["confidence"] or 0
+        if conf >= 0.5:
+            cls = "high"
+        elif conf >= 0.25:
+            cls = "medium"
+        else:
+            cls = "low"
+        matches.append({
+            "track_number": r["track_number"],
+            "title": r["title"],
+            "ost_duration": r["duration_secs"] or 0,
+            "wwise_id": r["wwise_id"],
+            "wwise_name": wwise_name,
+            "short_name": short,
+            "confidence": conf,
+            "confidence_class": cls,
+            "game_duration": r["game_duration"] or 0,
+            "has_clips": (
+                (Path(__file__).parent / "static" / "clips" / f"{r['track_number']:02d}_ost.opus").exists()
+                and (Path(__file__).parent / "static" / "clips" / f"{r['track_number']:02d}_game.opus").exists()
+            ),
+        })
+
+    matched_count = sum(1 for m in matches if m["confidence"] >= 0.15)
+    total_ost = len(matches)
+    high = sum(1 for m in matches if m["confidence"] >= 0.5)
+    medium = sum(1 for m in matches if 0.25 <= m["confidence"] < 0.5)
+    low = sum(1 for m in matches if 0.15 <= m["confidence"] < 0.25)
+    unmatched = sum(1 for m in matches if m["confidence"] < 0.15)
+
+    matched_wwise_ids = {m["wwise_id"] for m in matches if m["wwise_id"]}
+    all_game = db.execute(
+        "SELECT DISTINCT wwise_id, wwise_name FROM fingerprint_matches"
+    ).fetchall() if _has_table(db, "fingerprint_matches") else []
+    game_count = len({r["wwise_id"] for r in all_game})
+
+    unmatched_game_rows = db.execute("""
+        SELECT DISTINCT fm.wwise_id, fm.wwise_name
+        FROM fingerprint_matches fm
+        WHERE fm.wwise_id NOT IN (
+            SELECT fm2.wwise_id FROM fingerprint_matches fm2
+            JOIN ost_tracks ot ON fm2.ost_track_number = ot.track_number
+            GROUP BY fm2.wwise_id
+            HAVING MAX(fm2.confidence) >= 0.5
+        )
+    """).fetchall() if _has_table(db, "fingerprint_matches") else []
+
+    unmatched_game = [{
+        "wwise_id": r["wwise_id"],
+        "short_name": (r["wwise_name"] or "").rsplit("\\", 1)[-1].replace(".wav", ""),
+    } for r in unmatched_game_rows]
+
+    return templates.TemplateResponse(request, "fingerprints.html", {
+        "matches": matches,
+        "matched_count": matched_count,
+        "total_ost": total_ost,
+        "game_count": game_count,
+        "high_count": high,
+        "medium_count": medium,
+        "low_count": low,
+        "unmatched_count": unmatched,
+        "unmatched_game": unmatched_game,
     })
 
 

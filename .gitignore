@@ -1,3 +1,8 @@
+# Generated / build artifacts
+data/starfield_music.db
+data/wav/
+static/clips/
+
 # ---> Python
 # Byte-compiled / optimized / DLL files
 __pycache__/

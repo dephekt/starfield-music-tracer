@@ -10,6 +10,12 @@ dependencies = [
     "jinja2",
 ]
 
+[project.optional-dependencies]
+fingerprint = [
+    "pyvgmstream",
+    "pyacoustid",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["."]
 

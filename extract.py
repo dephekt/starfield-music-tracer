@@ -5,6 +5,7 @@ Runs locally against the Starfield ESM. Produces a small SQLite database
 that the web app reads at runtime.
 """
 
+import json
 import sqlite3
 import struct
 import sys
@@ -13,6 +14,7 @@ from pathlib import Path
 
 STARFIELD_DATA = Path.home() / ".steam/steam/steamapps/common/Starfield/Data"
 ESM_PATH = STARFIELD_DATA / "Starfield.esm"
+LOCALIZATION_BA2 = STARFIELD_DATA / "Starfield - Localization.ba2"
 DB_PATH = Path(__file__).parent / "data" / "starfield_music.db"
 
 COMPRESSED_FLAG = 0x00040000
@@ -91,6 +93,67 @@ def enter_grup(f, offset):
     hdr = read_header(f)
     assert hdr and hdr["tag"] == "GRUP", f"Expected GRUP at 0x{offset:08X}, got {hdr}"
     return offset + hdr["size"]
+
+
+# ---------------------------------------------------------------------------
+# BA2 extraction + localized strings
+# ---------------------------------------------------------------------------
+
+def extract_from_ba2(ba2_path, target_name):
+    """Extract a named file from a BA2 v1/v2/v3 GNRL archive."""
+    with open(ba2_path, "rb") as f:
+        magic = f.read(4)
+        if magic != b"BTDX":
+            return None
+        version = struct.unpack("<I", f.read(4))[0]
+        f.read(4)  # archive type
+        file_count = struct.unpack("<I", f.read(4))[0]
+        name_table_offset = struct.unpack("<Q", f.read(8))[0]
+        if version >= 2:
+            f.read(8)
+
+        records = []
+        for _ in range(file_count):
+            rec = f.read(36)
+            offset = struct.unpack_from("<Q", rec, 16)[0]
+            packed = struct.unpack_from("<I", rec, 24)[0]
+            unpacked = struct.unpack_from("<I", rec, 28)[0]
+            records.append((offset, packed, unpacked))
+
+        f.seek(name_table_offset)
+        target_lower = target_name.lower()
+        for i in range(file_count):
+            nlen = struct.unpack("<H", f.read(2))[0]
+            name = f.read(nlen).decode("utf-8", errors="replace")
+            if target_lower in name.lower():
+                off, packed, unpacked = records[i]
+                f.seek(off)
+                raw = f.read(packed if packed else unpacked)
+                if packed and packed != unpacked:
+                    raw = zlib.decompress(raw)
+                return raw
+    return None
+
+
+def load_string_table(ba2_path, lang="en"):
+    """Extract and parse the STRINGS table from a Localization BA2.
+
+    Returns {string_id: text} for resolving localized FULL subrecords.
+    """
+    raw = extract_from_ba2(ba2_path, f"starfield_{lang}.strings")
+    if raw is None:
+        return {}
+    count = struct.unpack_from("<I", raw, 0)[0]
+    data_start = 8 + count * 8
+    table = {}
+    for i in range(count):
+        base = 8 + i * 8
+        sid = struct.unpack_from("<I", raw, base)[0]
+        soff = struct.unpack_from("<I", raw, base + 4)[0]
+        start = data_start + soff
+        end = raw.index(b"\x00", start)
+        table[sid] = raw[start:end].decode("utf-8", errors="replace")
+    return table
 
 
 # ---------------------------------------------------------------------------
@@ -182,24 +245,33 @@ def resolve_must_chain(must_records):
     return resolved
 
 
-def parse_cells(f, offset):
+def parse_cells(f, offset, string_table=None):
     """Scan a top-level GRUP (CELL or WRLD) for CELL records with XCMO."""
     end = enter_grup(f, offset)
     cells = {}
+    string_table = string_table or {}
 
     def on_record(hdr, data):
         if hdr["tag"] != "CELL":
             return
         fid = hdr["form_id"]
         edid = None
+        full_id = None
         musc_fid = None
         for st, sd in iter_subrecords(data):
             if st == "EDID":
                 edid = sd.rstrip(b"\x00").decode("utf-8", errors="replace")
+            elif st == "FULL" and len(sd) == 4:
+                full_id = struct.unpack_from("<I", sd)[0]
             elif st == "XCMO" and len(sd) >= 4:
                 musc_fid = struct.unpack_from("<I", sd)[0]
         if musc_fid is not None:
-            cells[fid] = {"editor_id": edid, "musc_form_id": musc_fid}
+            full_name = string_table.get(full_id) if full_id else None
+            cells[fid] = {
+                "editor_id": edid,
+                "full_name": full_name,
+                "musc_form_id": musc_fid,
+            }
 
     walk_grup(f, end, on_record, {"CELL"})
     return cells
@@ -227,12 +299,14 @@ CREATE TABLE music_type_tracks (
 CREATE TABLE cells (
     form_id      INTEGER PRIMARY KEY,
     editor_id    TEXT,
+    full_name    TEXT,
     musc_form_id INTEGER REFERENCES music_types(form_id)
 );
 CREATE VIEW cell_music AS
 SELECT
     c.form_id     AS cell_form_id,
     c.editor_id   AS cell_name,
+    c.full_name   AS cell_full_name,
     mt.form_id    AS music_type_form_id,
     mt.editor_id  AS music_type,
     mk.form_id    AS track_form_id,
@@ -268,8 +342,8 @@ def write_database(cells, music_types, type_tracks, must_records, chain):
                       (musc_fid, leaf_fid))
 
     for fid, cell in cells.items():
-        c.execute("INSERT OR IGNORE INTO cells VALUES (?,?,?)",
-                  (fid, cell["editor_id"], cell["musc_form_id"]))
+        c.execute("INSERT OR IGNORE INTO cells VALUES (?,?,?,?)",
+                  (fid, cell["editor_id"], cell.get("full_name"), cell["musc_form_id"]))
 
     conn.commit()
 
@@ -295,6 +369,15 @@ def main():
     if not ESM_PATH.exists():
         print(f"ESM not found: {ESM_PATH}", file=sys.stderr)
         sys.exit(1)
+
+    # Load localized string table for FULL names
+    string_table = {}
+    if LOCALIZATION_BA2.exists():
+        print(f"Loading string table from {LOCALIZATION_BA2.name}...")
+        string_table = load_string_table(LOCALIZATION_BA2)
+        print(f"  {len(string_table)} strings loaded")
+    else:
+        print(f"Localization BA2 not found, friendly names will be unavailable")
 
     print(f"Opening {ESM_PATH.name} ({ESM_PATH.stat().st_size / 1e9:.2f} GB)")
 
@@ -349,14 +432,14 @@ def main():
         if "CELL" in grups:
             pos, sz = grups["CELL"]
             print(f"Parsing CELL ({sz:,} bytes at 0x{pos:08X})...")
-            cells = parse_cells(f, pos)
+            cells = parse_cells(f, pos, string_table)
             print(f"  {len(cells)} interior cells with music")
 
         # --- WRLD ---
         if "WRLD" in grups:
             pos, sz = grups["WRLD"]
             print(f"Parsing WRLD ({sz:,} bytes at 0x{pos:08X})...")
-            wrld_cells = parse_cells(f, pos)
+            wrld_cells = parse_cells(f, pos, string_table)
             new = sum(1 for fid in wrld_cells if fid not in cells)
             cells.update(wrld_cells)
             print(f"  {len(wrld_cells)} worldspace cells with music ({new} new)")

@@ -43,7 +43,10 @@
             <tbody>
                 {% for c in cells %}
                 <tr>
-                    <td><a href="/cell/{{ c.cell_name }}">{{ c.cell_name }}</a></td>
+                    <td>
+                        <a href="/cell/{{ c.cell_name }}">{{ c.cell_full_name or c.cell_name }}</a>
+                        {% if c.cell_full_name %}<span class="cell-edid">{{ c.cell_name }}</span>{% endif %}
+                    </td>
                     <td class="mono">{{ c.cell_form_id | formid }}</td>
                     <td><a href="/music-type/{{ c.music_type }}">{{ c.music_type }}</a></td>
                 </tr>

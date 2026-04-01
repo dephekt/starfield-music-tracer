@@ -215,6 +215,21 @@ h1 {
     line-height: 1;
 }
 
+/* -- Editor ID subtitles -- */
+
+.cell-edid {
+    display: block;
+    color: var(--text-dim);
+    font-size: 0.78em;
+    font-family: var(--mono);
+}
+
+.chain-edid {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    font-family: var(--mono);
+}
+
 /* -- Clickable chain nodes -- */
 
 a.chain-node--link {

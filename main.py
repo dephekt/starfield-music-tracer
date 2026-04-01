@@ -52,7 +52,8 @@ templates.env.filters["formid"] = form_id_hex
 async def index(request: Request):
     db = get_db()
     rows = db.execute("""
-        SELECT cell_form_id, cell_name, music_type_form_id, music_type,
+        SELECT cell_form_id, cell_name, cell_full_name,
+               music_type_form_id, music_type,
                track_form_id, track_name, track_hash
         FROM cell_music
         ORDER BY cell_name
@@ -67,7 +68,8 @@ async def index(request: Request):
 async def cell_detail(request: Request, editor_id: str):
     db = get_db()
     rows = db.execute("""
-        SELECT cell_form_id, cell_name, music_type_form_id, music_type,
+        SELECT cell_form_id, cell_name, cell_full_name,
+               music_type_form_id, music_type,
                track_form_id, track_name, track_hash
         FROM cell_music
         WHERE cell_name = ?
@@ -82,6 +84,7 @@ async def cell_detail(request: Request, editor_id: str):
     cell = {
         "form_id": rows[0]["cell_form_id"],
         "editor_id": rows[0]["cell_name"],
+        "full_name": rows[0]["cell_full_name"],
         "music_type": rows[0]["music_type"],
         "music_type_form_id": rows[0]["music_type_form_id"],
         "tracks": [{
@@ -109,7 +112,7 @@ async def music_type_detail(request: Request, editor_id: str):
         })
 
     cells = db.execute("""
-        SELECT cell_form_id, cell_name, track_form_id, track_name
+        SELECT cell_form_id, cell_name, cell_full_name, track_form_id, track_name
         FROM cell_music
         WHERE music_type = ?
         ORDER BY cell_name
@@ -143,7 +146,7 @@ async def track_detail(request: Request, editor_id: str):
         })
 
     cells = db.execute("""
-        SELECT cell_form_id, cell_name, music_type_form_id, music_type
+        SELECT cell_form_id, cell_name, cell_full_name, music_type_form_id, music_type
         FROM cell_music
         WHERE track_name = ?
         ORDER BY cell_name
@@ -175,12 +178,13 @@ async def api_search(q: str = Query("", min_length=0)):
     db = get_db()
     like = f"%{q}%"
     rows = db.execute("""
-        SELECT DISTINCT cell_form_id, cell_name, music_type, track_name
+        SELECT DISTINCT cell_form_id, cell_name, cell_full_name, music_type, track_name
         FROM cell_music
-        WHERE cell_name LIKE ? OR music_type LIKE ? OR track_name LIKE ?
+        WHERE cell_name LIKE ? OR cell_full_name LIKE ?
+              OR music_type LIKE ? OR track_name LIKE ?
         ORDER BY cell_name
         LIMIT 100
-    """, (like, like, like)).fetchall()
+    """, (like, like, like, like)).fetchall()
     return {"results": [dict(r) for r in rows]}
 
 

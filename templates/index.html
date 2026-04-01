@@ -19,7 +19,10 @@
         <tbody>
             {% for r in rows %}
             <tr>
-                <td><a href="/cell/{{ r.cell_name }}">{{ r.cell_name }}</a></td>
+                <td>
+                    <a href="/cell/{{ r.cell_name }}">{{ r.cell_full_name or r.cell_name }}</a>
+                    {% if r.cell_full_name %}<span class="cell-edid">{{ r.cell_name }}</span>{% endif %}
+                </td>
                 <td class="mono">{{ r.cell_form_id | formid }}</td>
                 <td><a href="/music-type/{{ r.music_type }}">{{ r.music_type }}</a></td>
                 <td><a href="/track/{{ r.track_name }}">{{ r.track_name }}</a></td>

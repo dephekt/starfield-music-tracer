@@ -6,12 +6,16 @@
 <p class="back"><a href="/">&larr; All cells</a></p>
 
 {% if cell %}
-<h1>{{ cell.editor_id }}</h1>
+<h1>{{ cell.full_name or cell.editor_id }}</h1>
+{% if cell.full_name %}
+<p class="subtitle">{{ cell.editor_id }}</p>
+{% endif %}
 
 <section class="chain">
     <div class="chain-node">
         <span class="chain-label">CELL</span>
-        <span class="chain-name">{{ cell.editor_id }}</span>
+        <span class="chain-name">{{ cell.full_name or cell.editor_id }}</span>
+        {% if cell.full_name %}<span class="chain-edid">{{ cell.editor_id }}</span>{% endif %}
         <span class="chain-fid mono">{{ cell.form_id | formid }}</span>
     </div>
     <div class="chain-arrow">&darr;</div>

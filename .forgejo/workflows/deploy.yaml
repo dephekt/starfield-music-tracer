@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Python deps
-        run: pip install uv && uv sync --frozen --extra fingerprint
+        run: pip install uv && uv sync --frozen --extra fingerprint --extra freeze
 
       - name: Run extraction
         run: uv run python extract.py
@@ -33,6 +33,18 @@ jobs:
         run: uv run python fingerprint.py
         env:
           LD_PRELOAD: /usr/lib/x86_64-linux-gnu/libvorbisfile.so.3
+
+      - name: Freeze static site
+        run: uv run python freeze.py
+        env:
+          SITE_BASE_PATH: /starfield-music-tracer
+
+      - name: Deploy to Codeberg Pages
+        uses: https://codeberg.org/git-pages/action@v2
+        with:
+          site: "https://${{ forge.repository_owner }}.codeberg.page/starfield-music-tracer/"
+          token: ${{ forge.token }}
+          source: _site/
 
       - name: Deploy to Upsun
         run: |

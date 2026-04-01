@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="controls">
+    <input type="search" id="search" placeholder="Filter cells, music types, or tracks..." autofocus>
+    <span class="count" id="count">{{ total }} entries</span>
+</div>
+
+<div class="table-wrap">
+    <table id="music-table">
+        <thead>
+            <tr>
+                <th>Cell</th>
+                <th>Form ID</th>
+                <th>Music Type</th>
+                <th>Track</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in rows %}
+            <tr>
+                <td><a href="/cell/{{ r.cell_name }}">{{ r.cell_name }}</a></td>
+                <td class="mono">{{ r.cell_form_id | formid }}</td>
+                <td>{{ r.music_type }}</td>
+                <td>{{ r.track_name }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    const input = document.getElementById('search');
+    const tbody = document.querySelector('#music-table tbody');
+    const rows = Array.from(tbody.rows);
+    const countEl = document.getElementById('count');
+    const total = rows.length;
+
+    input.addEventListener('input', function() {
+        const q = this.value.toLowerCase();
+        let visible = 0;
+        for (const row of rows) {
+            const text = row.textContent.toLowerCase();
+            const show = !q || text.includes(q);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        }
+        countEl.textContent = q ? visible + ' / ' + total + ' entries' : total + ' entries';
+    });
+})();
+</script>
+{% endblock %}

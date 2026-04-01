@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Starfield Music Tracer{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <a href="/" class="logo">Starfield Music Tracer</a>
+        <p class="tagline">CELL &rarr; MUSC &rarr; MUST chain from the ESM</p>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        <p>Data extracted from <code>Starfield.esm</code>. Not affiliated with Bethesda.</p>
+    </footer>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

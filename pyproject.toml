@@ -1,0 +1,18 @@
+[project]
+name = "starfield-music-tracer"
+version = "0.1.0"
+description = "Web app that maps every Starfield cell to its music track"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "jinja2",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

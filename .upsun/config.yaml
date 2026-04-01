@@ -1,0 +1,16 @@
+applications:
+  starfield-music:
+    source:
+      root: /
+    type: "python:3.12"
+    build:
+      flavor: none
+    hooks:
+      build: |
+        set -e
+        pip install uv
+        uv sync --frozen --no-dev
+    web:
+      commands:
+        start: uv run uvicorn main:app --host 0.0.0.0 --port $PORT
+    mounts: {}

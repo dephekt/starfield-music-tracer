@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}{{ editor_id }} - Starfield Music Tracer{% endblock %}
+
+{% block content %}
+<p class="back"><a href="/">&larr; All cells</a></p>
+
+{% if cell %}
+<h1>{{ cell.editor_id }}</h1>
+
+<section class="chain">
+    <div class="chain-node">
+        <span class="chain-label">CELL</span>
+        <span class="chain-name">{{ cell.editor_id }}</span>
+        <span class="chain-fid mono">{{ cell.form_id | formid }}</span>
+    </div>
+    <div class="chain-arrow">&darr;</div>
+    <div class="chain-node">
+        <span class="chain-label">MUSC</span>
+        <span class="chain-name">{{ cell.music_type }}</span>
+        <span class="chain-fid mono">{{ cell.music_type_form_id | formid }}</span>
+    </div>
+    <div class="chain-arrow">&darr;</div>
+    {% for track in cell.tracks %}
+    <div class="chain-node">
+        <span class="chain-label">MUST</span>
+        <span class="chain-name">{{ track.name }}</span>
+        <span class="chain-fid mono">{{ track.form_id | formid }}</span>
+        {% if track.hash %}
+        <span class="chain-hash mono">MTSH: {{ track.hash }}</span>
+        {% endif %}
+    </div>
+    {% if not loop.last %}
+    <div class="chain-arrow">&darr;</div>
+    {% endif %}
+    {% endfor %}
+</section>
+{% else %}
+<h1>Not found</h1>
+<p>No cell with editor ID <code>{{ editor_id }}</code> exists in the database.</p>
+{% endif %}
+{% endblock %}

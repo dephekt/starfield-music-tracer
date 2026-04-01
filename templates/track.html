@@ -17,6 +17,9 @@
     <span class="ost-badge-label">Official Soundtrack</span><br>
     <span class="ost-badge-title">{{ "%02d"|format(ost_match.track_number) }} &ndash; {{ ost_match.title }}</span>
     <span class="ost-badge-confidence">({{ (ost_match.confidence * 100) | round(1) }}% match)</span>
+    {% if ost_match.has_clip %}
+    <button class="preview-btn" data-src="/static/clips/{{ "%02d"|format(ost_match.track_number) }}_ost.opus" title="Preview clip">&#9654;</button>
+    {% endif %}
 </div>
 {% endif %}
 

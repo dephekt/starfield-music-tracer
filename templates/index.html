@@ -30,7 +30,7 @@
                 <td>
                     {% set match = ost_lookup.get(r.track_name) %}
                     {% if match %}
-                    <span class="ost-pill {{ 'high' if match.confidence >= 0.5 else ('medium' if match.confidence >= 0.25 else 'low') }}">#{{ match.track_number }} {{ match.title }}</span>
+                    {% if match.has_clip %}<button class="preview-btn" data-src="/static/clips/{{ "%02d"|format(match.track_number) }}_ost.opus" title="Preview clip">&#9654;</button>{% endif %}<span class="ost-pill {{ 'high' if match.confidence >= 0.5 else ('medium' if match.confidence >= 0.25 else 'low') }}">#{{ match.track_number }} {{ match.title }}</span>
                     {% else %}
                     <span class="text-dim">&mdash;</span>
                     {% endif %}

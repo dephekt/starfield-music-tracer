@@ -192,14 +192,17 @@ def _build_ost_lookup(db) -> dict:
         JOIN ost_tracks ot ON fm.ost_track_number = ot.track_number
         ORDER BY fm.confidence DESC
     """).fetchall()
+    clips_dir = Path(__file__).parent / "static" / "clips"
     lookup = {}
     for m in matches:
         key = m["wwise_name"].replace("_", "").rsplit("\\", 1)[-1].rsplit(".", 1)[0]
         if key not in lookup:
+            tn = m["track_number"]
             lookup[key] = {
                 "title": m["title"],
-                "track_number": m["track_number"],
+                "track_number": tn,
                 "confidence": m["confidence"],
+                "has_clip": (clips_dir / f"{tn:02d}_ost.opus").exists(),
             }
     return lookup
 
@@ -219,11 +222,15 @@ def _get_ost_match(db, track_editor_id: str):
     """, (track_editor_id,)).fetchone()
     if row is None:
         return None
+    tn = row["track_number"]
+    clips_dir = Path(__file__).parent / "static" / "clips"
+    has_clip = (clips_dir / f"{tn:02d}_ost.opus").exists()
     return {
-        "track_number": row["track_number"],
+        "track_number": tn,
         "title": row["title"],
         "confidence": row["confidence"],
         "ost_duration": row["duration_secs"],
+        "has_clip": has_clip,
     }
 
 

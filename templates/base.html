@@ -39,5 +39,31 @@
         </p>
     </footer>
     {% block scripts %}{% endblock %}
+    <script>
+    (function() {
+        let active = null;
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.preview-btn');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (active) {
+                active.pause();
+                active.remove();
+                const prev = document.querySelector('.preview-btn.playing');
+                if (prev) prev.classList.remove('playing');
+                if (prev === btn) { active = null; return; }
+            }
+            const audio = new Audio(btn.dataset.src);
+            audio.addEventListener('ended', function() {
+                btn.classList.remove('playing');
+                active = null;
+            });
+            audio.play();
+            btn.classList.add('playing');
+            active = audio;
+        });
+    })();
+    </script>
 </body>
 </html>

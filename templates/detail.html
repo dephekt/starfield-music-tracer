@@ -38,7 +38,11 @@
     <div class="chain-arrow">&darr;</div>
     <div class="chain-node chain-node--ost">
         <span class="chain-label">OST</span>
-        <span class="chain-name">Track name: {{ track.ost_match.title }}</span>
+        <span class="chain-name">Track name: {{ track.ost_match.title }}
+            {% if track.ost_match.has_clip %}
+            <button class="preview-btn" data-src="/static/clips/{{ "%02d"|format(track.ost_match.track_number) }}_ost.opus" title="Preview clip">&#9654;</button>
+            {% endif %}
+        </span>
         <span class="chain-fid">Track #{{ track.ost_match.track_number }}</span>
         <span class="chain-confidence {{ 'high' if track.ost_match.confidence >= 0.5 else ('medium' if track.ost_match.confidence >= 0.25 else 'low') }}">
             {{ (track.ost_match.confidence * 100) | round(1) }}% match

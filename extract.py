@@ -6,13 +6,17 @@ that the web app reads at runtime.
 """
 
 import json
+import os
 import sqlite3
 import struct
 import sys
 import zlib
 from pathlib import Path
 
-STARFIELD_DATA = Path.home() / ".steam/steam/steamapps/common/Starfield/Data"
+STARFIELD_DATA = Path(os.environ.get(
+    "STARFIELD_DATA",
+    Path.home() / ".steam/steam/steamapps/common/Starfield/Data",
+))
 ESM_PATH = STARFIELD_DATA / "Starfield.esm"
 LOCALIZATION_BA2 = STARFIELD_DATA / "Starfield - Localization.ba2"
 DB_PATH = Path(__file__).parent / "data" / "starfield_music.db"

@@ -23,8 +23,14 @@ from pathlib import Path
 import acoustid
 import pyvgmstream
 
-STARFIELD_DATA = Path.home() / ".steam/steam/steamapps/common/Starfield/Data"
-OST_DIR = Path.home() / ".steam/steam/steamapps/music/STARFIELD OFFICIAL SOUNDTRACK"
+STARFIELD_DATA = Path(os.environ.get(
+    "STARFIELD_DATA",
+    Path.home() / ".steam/steam/steamapps/common/Starfield/Data",
+))
+OST_DIR = Path(os.environ.get(
+    "OST_DIR",
+    Path.home() / ".steam/steam/steamapps/music/STARFIELD OFFICIAL SOUNDTRACK",
+))
 DB_PATH = Path(__file__).parent / "data" / "starfield_music.db"
 
 MIN_DURATION_SECS = 30

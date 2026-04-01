@@ -58,9 +58,11 @@ async def index(request: Request):
         FROM cell_music
         ORDER BY cell_name
     """).fetchall()
+    ost_lookup = _build_ost_lookup(db)
     return templates.TemplateResponse(request, "index.html", {
         "rows": rows,
         "total": len(rows),
+        "ost_lookup": ost_lookup,
     })
 
 
@@ -91,6 +93,7 @@ async def cell_detail(request: Request, editor_id: str):
             "form_id": r["track_form_id"],
             "name": r["track_name"],
             "hash": r["track_hash"],
+            "ost_match": _get_ost_match(db, r["track_name"]),
         } for r in rows],
     }
     return templates.TemplateResponse(request, "detail.html", {
@@ -178,6 +181,29 @@ def _has_table(db, table_name: str) -> bool:
     return row is not None
 
 
+def _build_ost_lookup(db) -> dict:
+    """Build a dict mapping normalized track names to their best OST match."""
+    if not _has_table(db, "fingerprint_matches"):
+        return {}
+    matches = db.execute("""
+        SELECT fm.wwise_name, fm.confidence,
+               ot.track_number, ot.title
+        FROM fingerprint_matches fm
+        JOIN ost_tracks ot ON fm.ost_track_number = ot.track_number
+        ORDER BY fm.confidence DESC
+    """).fetchall()
+    lookup = {}
+    for m in matches:
+        key = m["wwise_name"].replace("_", "").rsplit("\\", 1)[-1].rsplit(".", 1)[0]
+        if key not in lookup:
+            lookup[key] = {
+                "title": m["title"],
+                "track_number": m["track_number"],
+                "confidence": m["confidence"],
+            }
+    return lookup
+
+
 def _get_ost_match(db, track_editor_id: str):
     """Return best OST match for a MUST track editor ID, or None."""
     if not _has_table(db, "fingerprint_matches"):
@@ -187,7 +213,7 @@ def _get_ost_match(db, track_editor_id: str):
                ot.track_number, ot.title, ot.duration_secs
         FROM fingerprint_matches fm
         JOIN ost_tracks ot ON fm.ost_track_number = ot.track_number
-        WHERE fm.wwise_name LIKE '%' || ? || '%'
+        WHERE REPLACE(fm.wwise_name, '_', '') LIKE '%' || ? || '%'
         ORDER BY fm.confidence DESC
         LIMIT 1
     """, (track_editor_id,)).fetchone()

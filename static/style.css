@@ -167,6 +167,30 @@ tbody tr:hover {
     background: var(--surface);
 }
 
+.ost-pill {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.ost-pill.high {
+    background: rgba(80, 200, 80, 0.15);
+    color: #6dd66d;
+}
+
+.ost-pill.medium {
+    background: rgba(200, 180, 60, 0.15);
+    color: #d4c65a;
+}
+
+.ost-pill.low {
+    background: rgba(200, 80, 60, 0.15);
+    color: #d46a5a;
+}
+
 /* -- Detail page -- */
 
 .back {
@@ -261,6 +285,35 @@ a.chain-node--link:hover {
 
 a.chain-node--link:hover .chain-name {
     color: var(--accent);
+}
+
+.chain-node--ost {
+    border-color: #3a6a3a;
+    background: rgba(60, 120, 60, 0.08);
+}
+
+.chain-confidence {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 0.25rem;
+}
+
+.chain-confidence.high {
+    background: rgba(80, 200, 80, 0.2);
+    color: #6dd66d;
+}
+
+.chain-confidence.medium {
+    background: rgba(200, 180, 60, 0.2);
+    color: #d4c65a;
+}
+
+.chain-confidence.low {
+    background: rgba(200, 80, 60, 0.2);
+    color: #d46a5a;
 }
 
 /* -- Pivot pages -- */

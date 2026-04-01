@@ -34,6 +34,17 @@
         <span class="chain-hash mono">MTSH: {{ track.hash }}</span>
         {% endif %}
     </a>
+    {% if track.ost_match %}
+    <div class="chain-arrow">&darr;</div>
+    <div class="chain-node chain-node--ost">
+        <span class="chain-label">OST</span>
+        <span class="chain-name">Track name: {{ track.ost_match.title }}</span>
+        <span class="chain-fid">Track #{{ track.ost_match.track_number }}</span>
+        <span class="chain-confidence {{ 'high' if track.ost_match.confidence >= 0.5 else ('medium' if track.ost_match.confidence >= 0.25 else 'low') }}">
+            {{ (track.ost_match.confidence * 100) | round(1) }}% match
+        </span>
+    </div>
+    {% endif %}
     {% if not loop.last %}
     <div class="chain-arrow">&darr;</div>
     {% endif %}

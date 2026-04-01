@@ -14,6 +14,7 @@
                 <th>Form ID</th>
                 <th>Music Type</th>
                 <th>Track</th>
+                <th>OST Match</th>
             </tr>
         </thead>
         <tbody>
@@ -26,6 +27,14 @@
                 <td class="mono">{{ r.cell_form_id | formid }}</td>
                 <td><a href="/music-type/{{ r.music_type }}">{{ r.music_type }}</a></td>
                 <td><a href="/track/{{ r.track_name }}">{{ r.track_name }}</a></td>
+                <td>
+                    {% set match = ost_lookup.get(r.track_name) %}
+                    {% if match %}
+                    <span class="ost-pill {{ 'high' if match.confidence >= 0.5 else ('medium' if match.confidence >= 0.25 else 'low') }}">#{{ match.track_number }} {{ match.title }}</span>
+                    {% else %}
+                    <span class="text-dim">&mdash;</span>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>

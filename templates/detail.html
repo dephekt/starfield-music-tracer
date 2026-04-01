@@ -15,21 +15,21 @@
         <span class="chain-fid mono">{{ cell.form_id | formid }}</span>
     </div>
     <div class="chain-arrow">&darr;</div>
-    <div class="chain-node">
+    <a href="/music-type/{{ cell.music_type }}" class="chain-node chain-node--link">
         <span class="chain-label">MUSC</span>
         <span class="chain-name">{{ cell.music_type }}</span>
         <span class="chain-fid mono">{{ cell.music_type_form_id | formid }}</span>
-    </div>
+    </a>
     <div class="chain-arrow">&darr;</div>
     {% for track in cell.tracks %}
-    <div class="chain-node">
+    <a href="/track/{{ track.name }}" class="chain-node chain-node--link">
         <span class="chain-label">MUST</span>
         <span class="chain-name">{{ track.name }}</span>
         <span class="chain-fid mono">{{ track.form_id | formid }}</span>
         {% if track.hash %}
         <span class="chain-hash mono">MTSH: {{ track.hash }}</span>
         {% endif %}
-    </div>
+    </a>
     {% if not loop.last %}
     <div class="chain-arrow">&darr;</div>
     {% endif %}

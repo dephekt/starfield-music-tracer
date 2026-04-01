@@ -21,8 +21,8 @@
             <tr>
                 <td><a href="/cell/{{ r.cell_name }}">{{ r.cell_name }}</a></td>
                 <td class="mono">{{ r.cell_form_id | formid }}</td>
-                <td>{{ r.music_type }}</td>
-                <td>{{ r.track_name }}</td>
+                <td><a href="/music-type/{{ r.music_type }}">{{ r.music_type }}</a></td>
+                <td><a href="/track/{{ r.track_name }}">{{ r.track_name }}</a></td>
             </tr>
             {% endfor %}
         </tbody>

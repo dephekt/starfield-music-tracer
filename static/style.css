@@ -215,6 +215,105 @@ h1 {
     line-height: 1;
 }
 
+/* -- Clickable chain nodes -- */
+
+a.chain-node--link {
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
+}
+
+a.chain-node--link:hover {
+    border-color: var(--accent);
+    background: #1a1e28;
+}
+
+a.chain-node--link:hover .chain-name {
+    color: var(--accent);
+}
+
+/* -- Pivot pages -- */
+
+.subtitle {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin-top: -1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.related {
+    margin-bottom: 2rem;
+}
+
+.related h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--text);
+}
+
+.count-badge {
+    display: inline-block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-weight: 400;
+    vertical-align: middle;
+}
+
+.card-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.card-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    transition: border-color 0.15s;
+}
+
+.card-link:hover .card {
+    border-color: var(--accent);
+}
+
+.card-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+}
+
+.card-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.card-link:hover .card-name {
+    color: var(--accent);
+}
+
+.card-fid {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+}
+
 /* -- Responsive -- */
 
 @media (max-width: 640px) {

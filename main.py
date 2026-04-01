@@ -96,6 +96,74 @@ async def cell_detail(request: Request, editor_id: str):
     })
 
 
+@app.get("/music-type/{editor_id}", response_class=HTMLResponse)
+async def music_type_detail(request: Request, editor_id: str):
+    db = get_db()
+    info = db.execute(
+        "SELECT form_id, editor_id FROM music_types WHERE editor_id = ?",
+        (editor_id,),
+    ).fetchone()
+    if not info:
+        return templates.TemplateResponse(request, "music_type.html", {
+            "music_type": None, "editor_id": editor_id,
+        })
+
+    cells = db.execute("""
+        SELECT cell_form_id, cell_name, track_form_id, track_name
+        FROM cell_music
+        WHERE music_type = ?
+        ORDER BY cell_name
+    """, (editor_id,)).fetchall()
+
+    tracks = db.execute("""
+        SELECT DISTINCT mk.form_id, mk.editor_id, mk.mtsh
+        FROM music_type_tracks mtt
+        JOIN music_tracks mk ON mtt.must_form_id = mk.form_id
+        WHERE mtt.musc_form_id = ?
+    """, (info["form_id"],)).fetchall()
+
+    return templates.TemplateResponse(request, "music_type.html", {
+        "music_type": {"form_id": info["form_id"], "editor_id": info["editor_id"]},
+        "editor_id": editor_id,
+        "cells": cells,
+        "tracks": tracks,
+    })
+
+
+@app.get("/track/{editor_id}", response_class=HTMLResponse)
+async def track_detail(request: Request, editor_id: str):
+    db = get_db()
+    info = db.execute(
+        "SELECT form_id, editor_id, mtsh FROM music_tracks WHERE editor_id = ?",
+        (editor_id,),
+    ).fetchone()
+    if not info:
+        return templates.TemplateResponse(request, "track.html", {
+            "track": None, "editor_id": editor_id,
+        })
+
+    cells = db.execute("""
+        SELECT cell_form_id, cell_name, music_type_form_id, music_type
+        FROM cell_music
+        WHERE track_name = ?
+        ORDER BY cell_name
+    """, (editor_id,)).fetchall()
+
+    music_types = db.execute("""
+        SELECT DISTINCT mt.form_id, mt.editor_id
+        FROM music_type_tracks mtt
+        JOIN music_types mt ON mtt.musc_form_id = mt.form_id
+        WHERE mtt.must_form_id = ?
+    """, (info["form_id"],)).fetchall()
+
+    return templates.TemplateResponse(request, "track.html", {
+        "track": {"form_id": info["form_id"], "editor_id": info["editor_id"], "mtsh": info["mtsh"]},
+        "editor_id": editor_id,
+        "cells": cells,
+        "music_types": music_types,
+    })
+
+
 # ---------------------------------------------------------------------------
 # JSON API
 # ---------------------------------------------------------------------------

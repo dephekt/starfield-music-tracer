@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}{{ editor_id }} - Starfield Music Tracer{% endblock %}
+
+{% block content %}
+<p class="back"><a href="/">&larr; All cells</a></p>
+
+{% if music_type %}
+<h1>{{ music_type.editor_id }}</h1>
+<p class="subtitle">MUSC &middot; <span class="mono">{{ music_type.form_id | formid }}</span></p>
+
+{% if tracks %}
+<section class="related">
+    <h2>Tracks</h2>
+    <div class="card-list">
+        {% for t in tracks %}
+        <a href="/track/{{ t.editor_id }}" class="card-link">
+            <div class="card">
+                <span class="card-label">MUST</span>
+                <span class="card-name">{{ t.editor_id }}</span>
+                <span class="card-fid mono">{{ t.form_id | formid }}</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<section class="related">
+    <h2>Cells using this music type <span class="count-badge">{{ cells | length }}</span></h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Cell</th>
+                    <th>Form ID</th>
+                    <th>Track</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in cells %}
+                <tr>
+                    <td><a href="/cell/{{ c.cell_name }}">{{ c.cell_name }}</a></td>
+                    <td class="mono">{{ c.cell_form_id | formid }}</td>
+                    <td><a href="/track/{{ c.track_name }}">{{ c.track_name }}</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% else %}
+<h1>Not found</h1>
+<p>No music type with editor ID <code>{{ editor_id }}</code> exists.</p>
+{% endif %}
+{% endblock %}

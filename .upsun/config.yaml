@@ -14,3 +14,11 @@ applications:
       commands:
         start: uv run uvicorn main:app --host 0.0.0.0 --port $PORT
     mounts: {}
+
+routes:
+  "https://{default}/":
+    type: upstream
+    upstream: "starfield-music:http"
+  "https://www.{default}/":
+    type: redirect
+    to: "https://{default}/"

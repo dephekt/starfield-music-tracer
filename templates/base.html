@@ -3,16 +3,19 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Starfield Music Tracer{% endblock %}</title>
+    <title>{% block title %}Music Tracer for Starfield{% endblock %}</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <header>
         <div class="header-row">
-            <a href="/" class="logo">Starfield Music Tracer</a>
+            <a href="/" class="logo">Music Tracer for Starfield</a>
             <nav class="header-nav">
                 <a href="/fingerprints">Fingerprints</a>
             </nav>
+            {% if game_version %}
+            <span class="version-tag">Game Version: {{ game_version }}</span>
+            {% endif %}
         </div>
         <p class="tagline">CELL &rarr; MUSC &rarr; MUST chain from the ESM</p>
     </header>

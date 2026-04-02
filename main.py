@@ -1,4 +1,4 @@
-"""Starfield Music Tracer -- FastAPI web app."""
+"""Music Tracer for Starfield -- FastAPI web app."""
 
 import sqlite3
 from contextlib import asynccontextmanager
@@ -24,12 +24,15 @@ async def lifespan(app: FastAPI):
     global _db
     _db = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
     _db.row_factory = sqlite3.Row
+    meta = _load_metadata(_db)
+    templates.env.globals["game_version"] = meta.get("game_version", "")
+    templates.env.globals["extracted_at"] = meta.get("extracted_at", "")
     yield
     _db.close()
     _db = None
 
 
-app = FastAPI(title="Starfield Music Tracer", lifespan=lifespan)
+app = FastAPI(title="Music Tracer for Starfield", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
@@ -42,6 +45,13 @@ def form_id_hex(value):
 
 
 templates.env.filters["formid"] = form_id_hex
+
+
+def _load_metadata(db) -> dict:
+    if not _has_table(db, "metadata"):
+        return {}
+    rows = db.execute("SELECT key, value FROM metadata").fetchall()
+    return {r["key"]: r["value"] for r in rows}
 
 
 # ---------------------------------------------------------------------------

@@ -285,7 +285,25 @@ def parse_cells(f, offset, string_table=None):
 # SQLite output
 # ---------------------------------------------------------------------------
 
+def detect_game_version() -> str:
+    """Extract the game version from Starfield.exe (e.g. '1.15.222')."""
+    import re
+    exe_path = STARFIELD_DATA.parent / "Starfield.exe"
+    if not exe_path.exists():
+        return "unknown"
+    data = exe_path.read_bytes()
+    for m in re.finditer(rb"1\.\d{1,2}\.\d{1,3}\.0", data):
+        ver = m.group().decode("ascii").rstrip(".0")
+        if ver.count(".") == 2:
+            return ver
+    return "unknown"
+
+
 SCHEMA = """
+CREATE TABLE metadata (
+    key   TEXT PRIMARY KEY,
+    value TEXT
+);
 CREATE TABLE music_types (
     form_id   INTEGER PRIMARY KEY,
     editor_id TEXT
@@ -331,6 +349,13 @@ def write_database(cells, music_types, type_tracks, must_records, chain):
     conn = sqlite3.connect(str(DB_PATH))
     c = conn.cursor()
     c.executescript(SCHEMA)
+
+    game_version = detect_game_version()
+    from datetime import datetime, timezone
+    extracted_at = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    c.execute("INSERT INTO metadata VALUES (?,?)", ("game_version", game_version))
+    c.execute("INSERT INTO metadata VALUES (?,?)", ("extracted_at", extracted_at))
+    print(f"Game version: {game_version}")
 
     for fid, edid in music_types.items():
         c.execute("INSERT INTO music_types VALUES (?,?)", (fid, edid))

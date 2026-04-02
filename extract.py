@@ -286,7 +286,10 @@ def parse_cells(f, offset, string_table=None):
 # ---------------------------------------------------------------------------
 
 def detect_game_version() -> str:
-    """Extract the game version from Starfield.exe (e.g. '1.15.222')."""
+    """Extract the game version from Starfield.exe or STARFIELD_VERSION env var."""
+    env_ver = os.environ.get("STARFIELD_VERSION")
+    if env_ver:
+        return env_ver
     import re
     exe_path = STARFIELD_DATA.parent / "Starfield.exe"
     if not exe_path.exists():

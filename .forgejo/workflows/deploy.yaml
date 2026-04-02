@@ -14,6 +14,7 @@ jobs:
     env:
       STARFIELD_DATA: /starfield/Data
       OST_DIR: /starfield/Music
+      STARFIELD_VERSION: "1.15.222"
     steps:
       - name: Install system deps
         run: >-

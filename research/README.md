@@ -14,6 +14,7 @@
 | [pipeline-mutagen-spriggit.md](pipeline-mutagen-spriggit.md) | Spriggit (Linux), Mutagen package, strings caveat, architecture, `StarfieldExplore` probe, vanilla record counts |
 | [crafting-and-resources.md](crafting-and-resources.md) | COBJ / Amp / refineries, planet flora mapping, acquisition taxonomy & axes, Penicillin slice |
 | [outpost-organic-husbandry.md](outpost-organic-husbandry.md) | Creature loot, organic builder COBJ/PackIn/VMAD, pen scripts, PEX → PSC (Champollion + Wine) |
+| [outpost-papyrus-notes.md](outpost-papyrus-notes.md) | Decompiled harvester scripts: `GetActorBaseForResource` / `GetFloraForResource`, scan flags, indexable vs TBD gates |
 | [tooling-catalog.md](tooling-catalog.md) | `StarfieldExplore` debug flags, Python BA2/pex helpers |
 
 **Code**

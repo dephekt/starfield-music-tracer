@@ -15,4 +15,9 @@ Map **app entities** to **sources of truth** in plugins, BA2 scripts, or heurist
 | Creature loot | `Npc.DeathItem` → leveled lists → leaf items | Multiple drops per species |
 | Vendor / merchant | TBD (editor IDs, factions, or dedicated records) | danplan placeholder |
 | Outpost organic production | Scripts in `Starfield - Misc.ba2`; VMAD on containers | See [outpost-organic-husbandry.md](outpost-organic-husbandry.md) |
+| Pen herd size tier | VMAD `FaunaCreation` struct list on container | `createCount` + `CreatureKeyword`; matches `HasKeyword` loop in fauna script ([outpost-papyrus-notes.md](outpost-papyrus-notes.md)) |
+| Organic AV → fauna ActorBase | Native `GetActorBaseForResource(OrganicResourceAV)` | Not an ESM field in these scripts; mapping is engine/TBD |
+| Organic AV → Flora form | Native `GetFloraForResource(OrganicResourceAV)` | Same |
+| Scanner flags on pen spawns | `SetScanned(True)` + `HandScannerTarget` on placed refs | Applied **after** spawn; does **not** encode “player scanned wild species” in these three scripts |
+| Terminal / product unlock rules | Other UI or quest scripts (not decompiled here) | Treat **full scan** as product condition until traced |
 | Display names | Localization BA2 / strings; Mutagen `TranslatedString` on Linux needs path setup | [pipeline-mutagen-spriggit.md](pipeline-mutagen-spriggit.md) |

@@ -61,3 +61,7 @@ wine /path/to/Champollion.exe -p /tmp/psc_out /tmp/outpostharvesterfaunascript.p
 | Fauna harvester | `outpostharvesterfaunascript.pex` |
 | Flora harvester | `outpostharvesterflorascript.pex` |
 | Flora planter | `outpostharvesterfloraplanterscript.pex` |
+
+### Decompiled behavior summary
+
+After PEX → PSC, see **[outpost-papyrus-notes.md](outpost-papyrus-notes.md)** for line-level behavior: **`SetScanned(True)`** on spawned pen flora/fauna (not a player-scan gate in these files), **`GetActorBaseForResource` / `GetFloraForResource`**, herd sizing from **`FaunaCreation`**, and what is still **not** in script (planet eligibility, terminal product list).

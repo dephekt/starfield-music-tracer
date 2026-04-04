@@ -1,4 +1,7 @@
 # Generated / build artifacts
+# Local Champollion output (regenerate via research/outpost-organic-husbandry.md)
+research/decompiled/
+
 # .NET (Mutagen tools under tools/)
 tools/**/bin/
 tools/**/obj/

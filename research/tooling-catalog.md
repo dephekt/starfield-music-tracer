@@ -28,3 +28,18 @@ Run from repo: `dotnet run --project tools/StarfieldExplore` (optional `STARFIEL
 ## PEX → PSC (Champollion + Wine)
 
 Full recipe (install, flags, caveats): **[outpost-organic-husbandry.md](outpost-organic-husbandry.md)** → subsection **PEX → PSC (Champollion + Wine)**.
+
+**Batch (three vanilla harvesters)** — from repo root, after `Champollion.exe` is on path via `wine`:
+
+```bash
+mkdir -p research/decompiled/pe research/decompiled/psc
+for n in outpostharvesterfaunascript.pex outpostharvesterflorascript.pex outpostharvesterfloraplanterscript.pex; do
+  python3 tools/extract_misc_ba2_script.py --name "$n" -o "research/decompiled/pe/$n"
+done
+wine /path/to/Champollion.exe -p research/decompiled/psc \
+  research/decompiled/pe/outpostharvesterfaunascript.pex \
+  research/decompiled/pe/outpostharvesterflorascript.pex \
+  research/decompiled/pe/outpostharvesterfloraplanterscript.pex
+```
+
+(`research/decompiled/` is gitignored; behavior notes: **[outpost-papyrus-notes.md](outpost-papyrus-notes.md)**.)

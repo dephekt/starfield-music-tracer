@@ -1,4 +1,8 @@
 # Generated / build artifacts
+# .NET (Mutagen tools under tools/)
+tools/**/bin/
+tools/**/obj/
+
 data/starfield_music.db
 data/wav/
 static/clips/

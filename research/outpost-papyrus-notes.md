@@ -64,8 +64,47 @@
 | Which **organic AV** the module builds | Set by menu event → stored on script | Offer list likely from **COBJ/builder data** or other records; **not** read from planet tables here |
 | **ActorBase** / **Flora** for an AV | `GetActorBaseForResource` / `GetFloraForResource` | Need **game/native** mapping or empirical table; **not** derivable from ESM alone without reverse-engineering those natives |
 | **Herd tier** (`createCount`) | `FaunaCreation` + `HasKeyword` on spawned actor | **Indexable** from container VMAD **`FaunaCreation`** (already in Mutagen dumps) |
-| **Player must scan** wild species | Not enforced here; spawns get **`SetScanned(True)`** | Terminal/gating rules = **TBD other scripts**; keep **scan** as a **product rule** until found |
+| **Player must scan** wild species | Not enforced here; spawns get **`SetScanned(True)`** | **SQ_ParentScript** (below) owns much of the global scan / planet-trait pipeline; organic **terminal** gating may still be **native UI** |
 | **Planet-level organic eligibility** | Not in these three files | Still **planet × flora/fauna graphs** + future mapping from AV→world sources |
+
+---
+
+## Follow-up survey: terminal UI, `OrganicResource`, scan strings (Misc.ba2)
+
+Method: walk **`Starfield - Misc.ba2`** with [`tools/misc_ba2_grep.py`](../tools/misc_ba2_grep.py) / [`iter_misc_ba2_entries`](../tools/starfield_misc_ba2.py); decompile **`OutpostContainerScript`** with Champollion.
+
+### `OrganicResource` literal in `.pex` bodies
+
+Only these two scripts contain the **`OrganicResource`** substring in the compiled blob:
+
+- `scripts/outpostharvesterfaunascript.pex`
+- `scripts/outpostharvesterflorascript.pex`
+
+So there is **no** separate Papyrus “organic resource picker” script that names that property in Misc.ba2 — the workshop flow is almost certainly **native UI** calling into **`OnBuilderMenuSelect(ActorValue)`** on the harvester scripts (already decompiled above).
+
+### “Terminal” vs container UI
+
+**`OutpostContainerScript`** (decompiled): registers **`RegisterForMenuOpenCloseEvent("ContainerMenu")`** and shuffles inventory between linked containers when the **vanilla container menu** opens/closes or the player adds/removes items. It does **not** implement a custom organic production menu or product list — it is **logistics for linked storage**, not eligibility logic.
+
+No **`HarvesterMenu`**, **`OrganicFauna`**, or **`OrganicFlora`** string hits appeared in a Misc.ba2 substring sweep (aside from normal word fragments inside other symbols).
+
+### Scan-related string hits (all `.pex` in Misc.ba2)
+
+| Substring | Count / notes |
+|-----------|----------------|
+| **`GetScanned`** | **0** hits as an embedded identifier string (call may still exist under another representation). |
+| **`SetScanned`** | `outpostharvesterfaunascript`, `outpostharvesterfloraplanterscript`, `sq_parentscript`, one DLC quest fragment, plus base **`objectreference.pex`** plumbing. |
+| **`IsScanned`** | **`objectreference.pex`**, **`planettraitscantargetscript.pex`** only. |
+
+### **`SQ_ParentScript`** — next Papyrus read for scan / zoology
+
+`scripts/sq_parentscript.pex` (~46 KB) is the **shared parent quest** script. Embedded strings include **`OnPlayerScannedObject`**, **`OnPlayerScanPlanet`**, **`incrementScanCount`**, **`PlanetTraitLocationScanCount`**, **`UpdateScanTarget`**, **`ZoologyNonLethalHarvestCount`**, **`HarvestActor`**, **`KeywordType_PlanetFaunaAbundance`**, **`KeywordType_PlanetFloraAbundance`**, **`SetScanned`**, **`testSetScanned`**, etc. This is the **central** place (in Papyrus) for **planet trait / scan target / zoology harvest counters** — not the three harvester scripts.
+
+**Suggested next decompile:** `sq_parentscript.pex` (large; filter for functions touching scan / harvest / outpost).
+
+### Native mapping (`OrganicResourceAV` → ActorBase / Flora)
+
+Confirmed again: only the two harvester scripts name **`OrganicResource`** in Misc.ba2. **`GetActorBaseForResource`** / **`GetFloraForResource`** are **engine natives**; treat AV→form resolution as **black box** for data tooling until reverse-engineered or tabled empirically.
 
 ---
 

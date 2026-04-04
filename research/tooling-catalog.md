@@ -23,6 +23,8 @@ Run from repo: `dotnet run --project tools/StarfieldExplore` (optional `STARFIEL
 ## Python helpers (`tools/`)
 
 - [`extract_misc_ba2_script.py`](../tools/extract_misc_ba2_script.py) — extract one `scripts/*.pex` from `Starfield - Misc.ba2`.
+- [`starfield_misc_ba2.py`](../tools/starfield_misc_ba2.py) — `iter_misc_ba2_entries` / `extract_named_file` for BA2 research.
+- [`misc_ba2_grep.py`](../tools/misc_ba2_grep.py) — list archive paths whose name or payload contains a substring (e.g. `OrganicResource`, `SetScanned`, `--suffix .pex`).
 - [`dump_outpost_husbandry_pex_strings.py`](../tools/dump_outpost_husbandry_pex_strings.py) — extract the three vanilla harvester `**.pex**` and print filtered strings (`--all` for full ASCII runs).
 
 ## PEX → PSC (Champollion + Wine)

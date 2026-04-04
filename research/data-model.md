@@ -19,5 +19,6 @@ Map **app entities** to **sources of truth** in plugins, BA2 scripts, or heurist
 | Organic AV → fauna ActorBase | Native `GetActorBaseForResource(OrganicResourceAV)` | Not an ESM field in these scripts; mapping is engine/TBD |
 | Organic AV → Flora form | Native `GetFloraForResource(OrganicResourceAV)` | Same |
 | Scanner flags on pen spawns | `SetScanned(True)` + `HandScannerTarget` on placed refs | Applied **after** spawn; does **not** encode “player scanned wild species” in these three scripts |
-| Terminal / product unlock rules | Other UI or quest scripts (not decompiled here) | Treat **full scan** as product condition until traced |
+| Terminal / product unlock rules | Mostly **native workshop UI** + **`OnBuilderMenuSelect`** on harvesters; **`OutpostContainerScript`** = **ContainerMenu** only | See [outpost-papyrus-notes.md](outpost-papyrus-notes.md) Misc.ba2 survey |
+| Planet scan / zoology harvest counters | **`SQ_ParentScript`** (`OnPlayerScannedObject`, scan count AVs, `HarvestActor`, …) | Decompile `sq_parentscript.pex` next for wild-scan gates |
 | Display names | Localization BA2 / strings; Mutagen `TranslatedString` on Linux needs path setup | [pipeline-mutagen-spriggit.md](pipeline-mutagen-spriggit.md) |

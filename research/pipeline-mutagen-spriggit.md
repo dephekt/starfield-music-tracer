@@ -36,7 +36,7 @@ Validate **Spriggit** (YAML/JSON tree export) and **Mutagen** (typed C# API) for
 ### GameEnvironment on Linux (2026-04)
 
 - `**GameEnvironment.Typical.Construct(GameRelease.Starfield)**` still relies on default **Plugins.txt** discovery → same **LocalAppData** problem on bare Linux.
-- **Recommended:** set **`STARFIELD_PLUGINS_TXT`** to the absolute path of your **`plugins.txt`**, then **`WithResolver`** → **`PluginListingsPathInjection`** implements **`IPluginListingsPathContext`** (see **`vendor/Mutagen/Mutagen.Bethesda.Core/Plugins/Order/DI/PluginListingsPathContext.cs`**). That satisfies archive/string code that still asks for the listings file path even when you also use **`WithLoadOrder`**.
+- **Recommended:** set **`STARFIELD_PLUGINS_TXT`** to the absolute path of the game’s **`Plugins.txt`** (capital **P**; Linux paths are case-sensitive). Repo default layout: **`tools/StarfieldExplore/env.example.sh`**. Then **`WithResolver`** → **`PluginListingsPathInjection`** implements **`IPluginListingsPathContext`** (see **`vendor/Mutagen/Mutagen.Bethesda.Core/Plugins/Order/DI/PluginListingsPathContext.cs`**). That satisfies archive/string code that still asks for the listings file path even when you also use **`WithLoadOrder`**.
 - **Load order:** omit **`STARFIELD_LOAD_ORDER`** to read order from that **`plugins.txt`**; or set **`STARFIELD_LOAD_ORDER`**=`Plugin1.esm,…` to **override** the file. If neither file nor override: fallback **`WithLoadOrder(Starfield.esm)`** only.
 - **Strings:** if **`Name.String`** still fails, add **`WithStringParameters(StringsReadParameters)`** (**`StringsFolderOverride`** / **`BsaFolderOverride`**) or Proton **`LOCALAPPDATA`**. **`--inspect-game-environment`** ([tooling-catalog.md](tooling-catalog.md)).
 

@@ -178,7 +178,7 @@ static int RunInspectOutpostHarvesters(StarfieldExploreSession session)
             foreach (var (group, rec) in refs.OrderBy(x => x.Group, StringComparer.Ordinal).ThenBy(x => x.Rec.EditorID, StringComparer.Ordinal))
             {
                 Console.WriteLine(
-                    $"    {group}  {rec.FormKey}  EDID={rec.EditorID}  ({rec.GetType().Name})");
+                    $"    {group}  {rec.FormKey}  EDID={rec.EditorID}  ({rec.GetType().Name}){DisplayNameSuffixForMajor(rec)}");
                 var vmad = TryGetVirtualMachineAdapter(rec);
                 DumpVirtualMachineAdapter(vmad, "      ", cache, miscByFormKey, constructibleByFormKey);
                 if (rec is IFormLinkContainerGetter flcRef)
@@ -377,7 +377,7 @@ static int RunInspectOutpostHusbandryCells(StarfieldExploreSession session)
         }
 
         var cellKeys = CollectCellFormKeysFromPackIn(pk, cache);
-        Console.WriteLine($"=== PackIn {pk.FormKey}  EDID={edid} ===");
+        Console.WriteLine($"=== PackIn {pk.FormKey}  EDID={edid}{TranslatedNameSuffix(pk)} ===");
         if (cellKeys.Count == 0)
         {
             Console.WriteLine("  (no ICellGetter FormKey in PackIn EnumerateFormLinks)");
@@ -395,7 +395,7 @@ static int RunInspectOutpostHusbandryCells(StarfieldExploreSession session)
             }
 
             Console.WriteLine();
-            Console.WriteLine($"  --- CELL {cell.FormKey}  EDID={cell.EditorID} ---");
+            Console.WriteLine($"  --- CELL {cell.FormKey}  EDID={cell.EditorID}{TranslatedNameSuffix(cell)} ---");
             try
             {
                 DumpPlacedListForHusbandryCell(
@@ -512,7 +512,7 @@ static int RunInspectPenFaunaScriptTrace(StarfieldExploreSession session)
 
     Console.WriteLine($"Containers with **{faunaScript}**: {faunaContainers.Count}");
     foreach (var c in faunaContainers.OrderBy(x => x.EditorID, StringComparer.Ordinal))
-        Console.WriteLine($"  {c.FormKey}  EDID={c.EditorID}");
+        Console.WriteLine($"  {c.FormKey}  EDID={c.EditorID}{TranslatedNameSuffix(c)}");
 
     Console.WriteLine();
     FormKey? questFk = null;
@@ -554,7 +554,7 @@ static int RunInspectPenFaunaScriptTrace(StarfieldExploreSession session)
     }
 
     Console.WriteLine(
-        $"Quest record: {quest.FormKey}  EDID={quest.EditorID}  Stages={quest.Stages?.Count ?? 0}  Objectives={quest.Objectives?.Count ?? 0}");
+        $"Quest record: {quest.FormKey}  EDID={quest.EditorID}{TranslatedNameSuffix(quest)}  Stages={quest.Stages?.Count ?? 0}  Objectives={quest.Objectives?.Count ?? 0}");
     try
     {
         var summary = quest.Summary;
@@ -584,7 +584,7 @@ static int RunInspectPenFaunaScriptTrace(StarfieldExploreSession session)
                 var t = targets[ti];
                 string kw = "(no Keyword)";
                 if (!t.Keyword.IsNull && cache.TryResolve<IKeywordGetter>(t.Keyword.FormKey, out var kg))
-                    kw = $"{t.Keyword.FormKey}  EDID={kg.EditorID}";
+                    kw = $"{t.Keyword.FormKey}  EDID={kg.EditorID}{TranslatedNameSuffix(kg)}";
                 else if (!t.Keyword.IsNull)
                     kw = t.Keyword.FormKey.ToString();
                 var condN = 0;
@@ -626,7 +626,7 @@ static void PrintFormListEntries(
 {
     var items = fl.Items;
     var n = items?.Count ?? 0;
-    Console.WriteLine($"FormList {fl.FormKey}  {n} entr(y/ies):");
+    Console.WriteLine($"FormList {fl.FormKey}{TranslatedNameSuffix(fl)}  {n} entr(y/ies):");
     if (items is null) return;
     foreach (var it in items)
     {

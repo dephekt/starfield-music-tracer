@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <!-- Roslyn / .NET SDK code analysis for this tool only (not inherited by vendor/Mutagen). -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>8.0</AnalysisLevel>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+</Project>

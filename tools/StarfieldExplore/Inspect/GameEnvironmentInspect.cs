@@ -35,6 +35,10 @@ static int RunInspectGameEnvironment(StarfieldExploreSession session)
         Console.WriteLine($"  {pluginsTxt}");
     }
 
+    var starfieldIni = Environment.GetEnvironmentVariable("STARFIELD_INI")?.Trim();
+    if (!string.IsNullOrEmpty(starfieldIni))
+        Console.WriteLine($"STARFIELD_INI (archive list from ini): {starfieldIni}");
+
     Console.WriteLine("Starfield.esm: ESM-shaped record scan uses session.StarfieldEsm (listing entry above).");
     Console.WriteLine($"LinkCache: {session.LinkCache.GetType().Name}");
     Console.WriteLine($"Effective target language: {session.TargetLanguage}");
@@ -72,7 +76,7 @@ static void TryPrintSampleLocalizedName(IGameEnvironment<IStarfieldMod, IStarfie
 
     try
     {
-        var s = amp.Name?.String ?? "";
+        var s = TryFormatTranslatedName(amp.Name);
         Console.WriteLine(
             string.IsNullOrEmpty(s)
                 ? "Sample **Chem_Craft_Amp** → Name.String is empty (strings path or language may still be wrong)."

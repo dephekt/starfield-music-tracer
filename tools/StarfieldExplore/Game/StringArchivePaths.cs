@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using System;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Archives.DI;
 using Mutagen.Bethesda.Environments.DI;
@@ -55,6 +56,15 @@ internal static class StringArchivePaths
         var dataDirProvider = new DataDirectoryInjection(dataPath);
         var gameDirLookup = new GameDirectoryLookupInjection(release, dataPath.Directory);
         var archiveExt = new ArchiveExtensionProvider(releaseCtx);
+        var iniFromEnv = Environment.GetEnvironmentVariable("STARFIELD_INI")?.Trim();
+        IIniPathProvider iniProvider =
+            !string.IsNullOrEmpty(iniFromEnv) && fs.File.Exists(iniFromEnv)
+                ? new IniPathInjection(new FilePath(iniFromEnv))
+                : new IniPathProvider(
+                    releaseCtx,
+                    new IniPathLookup(
+                        gameDirLookup,
+                        new NullProtonPrefixProvider()));
         return new GetApplicableArchivePaths(
             fs,
             new CheckArchiveApplicability(archiveExt),
@@ -62,13 +72,7 @@ internal static class StringArchivePaths
             archiveExt,
             new CachedArchiveListingDetailsProvider(
                 listingsForArchiveSort,
-                new GetArchiveIniListings(
-                    fs,
-                    new IniPathProvider(
-                        releaseCtx,
-                        new IniPathLookup(
-                            gameDirLookup,
-                            new NullProtonPrefixProvider()))),
+                new GetArchiveIniListings(fs, iniProvider),
                 new ArchiveNameFromModKeyProvider(releaseCtx)));
     }
 }

@@ -7,13 +7,14 @@ using Mutagen.Bethesda.Plugins.Order.DI;
 using Mutagen.Bethesda.Plugins.Utility;
 using Mutagen.Bethesda.Starfield;
 using Mutagen.Bethesda.Strings;
+using Mutagen.Bethesda.Strings.DI;
 using Noggog;
 
 namespace StarfieldExplore.Game;
 
 public static class StarfieldSessionFactory
 {
-    /// <summary>Resolve <see cref="Language"/> from env; returns null if unset (caller uses English and does not override StringsReadParameters).</summary>
+    /// <summary>Resolve <see cref="Language"/> from env; returns null if unset (session still uses English for strings).</summary>
     public static Language? TryParseTargetLanguageFromEnvironment()
     {
         var raw = Environment.GetEnvironmentVariable("STARFIELD_TARGET_LANGUAGE")?.Trim();
@@ -54,7 +55,7 @@ public static class StarfieldSessionFactory
         if (!hasPlugins && !hasLo)
         {
             error =
-                "Set STARFIELD_PLUGINS_TXT (full path to Plugins.txt) or STARFIELD_LOAD_ORDER (comma-separated plugin filenames) so load order and string BA2 resolution match the game.";
+                "Set STARFIELD_PLUGINS_TXT (full path to Plugins.txt — capital P on Linux) or STARFIELD_LOAD_ORDER (comma-separated plugin filenames) so load order and string BA2 resolution match the game.";
             return false;
         }
 
@@ -80,11 +81,13 @@ public static class StarfieldSessionFactory
 
         var optionalLang = TryParseTargetLanguageFromEnvironment();
         var effectiveLang = optionalLang ?? Language.English;
+        TranslatedString.DefaultLanguage = effectiveLang;
 
         var stringsRead = new StringsReadParameters
         {
             ApplicableArchivePathsOverride = archiveForStrings,
-            TargetLanguage = optionalLang,
+            TargetLanguage = effectiveLang,
+            NonLocalizedEncodingOverride = MutagenEncoding._utf8,
         };
 
         IGameEnvironment<IStarfieldMod, IStarfieldModGetter> env;
@@ -127,9 +130,6 @@ public static class StarfieldSessionFactory
             error = $"Starfield.esm is not present in the resolved load order (ModKey {starfieldKey}).";
             return false;
         }
-
-        if (optionalLang.HasValue)
-            TranslatedString.DefaultLanguage = optionalLang.Value;
 
         session = new StarfieldExploreSession(dataDirectory, env, starfieldMod, effectiveLang);
         return true;

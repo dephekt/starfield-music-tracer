@@ -4,10 +4,13 @@ vendor/Mutagen/
 # Generated / build artifacts
 # Local Champollion output (regenerate via research/outpost-organic-husbandry.md)
 research/decompiled/
+# Optional: drop Champollion.exe here instead of ~/.local/share/champollion/ (see same doc)
+tools/champollion/
 
 # .NET (Mutagen tools under tools/)
 tools/**/bin/
 tools/**/obj/
+tools/StarfieldExplore/env.local.sh
 
 data/starfield_music.db
 data/wav/

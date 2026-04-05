@@ -35,7 +35,8 @@ static void PrintRgdResourceLines(ILinkCache cache, FormKey rgdFk, string prefix
         if (item is null || item.Resource.IsNull) continue;
         var rf = item.Resource.FormKey;
         cache.TryResolve<IResourceGetter>(rf, out var res);
-        Console.WriteLine($"{prefix}    Resource {rf}  EDID={res?.EditorID}");
+        var resSuf = res is not null ? TranslatedNameSuffix(res) : "";
+        Console.WriteLine($"{prefix}    Resource {rf}  EDID={res?.EditorID}{resSuf}");
     }
 }
 
@@ -92,9 +93,14 @@ static int RunInspectPlanetSurvey(StarfieldExploreSession session, string hint)
             {
                 var biome = biomes[bi];
                 string? biomeEdid = null;
+                var biomeSuf = "";
                 if (!biome.Biome.IsNull && cache.TryResolve<IBiomeGetter>(biome.Biome.FormKey, out var br))
+                {
                     biomeEdid = br.EditorID;
-                Console.WriteLine($"  [{bi}] PlanetBiome  Biome={biomeEdid}  ({biome.Biome.FormKey})");
+                    biomeSuf = TranslatedNameSuffix(br);
+                }
+
+                Console.WriteLine($"  [{bi}] PlanetBiome  Biome={biomeEdid}{biomeSuf}  ({biome.Biome.FormKey})");
                 var rgPlanetBiome = biome.ResourceGeneration;
                 if (rgPlanetBiome.IsNull)
                     Console.WriteLine("      PlanetBiome.ResourceGeneration: (null)");
@@ -144,7 +150,7 @@ static int RunInspectPlanetSurvey(StarfieldExploreSession session, string hint)
                 if (!cache.TryResolve<IResourceGetter>(fk, out var res)) continue;
                 if (!ResourceEdidLooksLikeSurveyInteresting(res.EditorID)) continue;
                 if (!seenRes.Add(fk)) continue;
-                Console.WriteLine($"  {fk}  EDID={res.EditorID}");
+                Console.WriteLine($"  {fk}  EDID={res.EditorID}{TranslatedNameSuffix(res)}");
             }
         }
         catch (Exception ex)
@@ -204,12 +210,16 @@ static int RunInspectPlanetFauna(StarfieldExploreSession session, string hint, i
         {
             var pb = biomes[bi];
             string? biomeEdid = null;
+            var biomeSuf = "";
             if (!pb.Biome.IsNull && cache.TryResolve<IBiomeGetter>(pb.Biome.FormKey, out var br))
+            {
                 biomeEdid = br.EditorID;
+                biomeSuf = TranslatedNameSuffix(br);
+            }
 
             var fauna = pb.Fauna;
             Console.WriteLine();
-            Console.WriteLine($"  [{bi}] PlanetBiome  Biome={biomeEdid}  ({pb.Biome.FormKey})");
+            Console.WriteLine($"  [{bi}] PlanetBiome  Biome={biomeEdid}{biomeSuf}  ({pb.Biome.FormKey})");
             if (fauna is null || fauna.Count == 0)
             {
                 Console.WriteLine("      Fauna: (empty)");
@@ -230,7 +240,8 @@ static int RunInspectPlanetFauna(StarfieldExploreSession session, string hint, i
 
                 if (cache.TryResolve<INpcGetter>(fk, out var directNpc))
                 {
-                    Console.WriteLine($"        → Npc {directNpc.FormKey}  EDID={directNpc.EditorID}");
+                    Console.WriteLine(
+                        $"        → Npc {directNpc.FormKey}  EDID={directNpc.EditorID}{TranslatedNameSuffix(directNpc)}");
                     foreach (var lf in leaves)
                         allLeafNpcs.Add(lf);
                 }
@@ -246,7 +257,7 @@ static int RunInspectPlanetFauna(StarfieldExploreSession session, string hint, i
                                  StringComparer.OrdinalIgnoreCase))
                     {
                         if (cache.TryResolve<INpcGetter>(nfk, out var n))
-                            Console.WriteLine($"           • {nfk}  EDID={n.EditorID}");
+                            Console.WriteLine($"           • {nfk}  EDID={n.EditorID}{TranslatedNameSuffix(n)}");
                     }
                 }
                 else
@@ -266,8 +277,112 @@ static int RunInspectPlanetFauna(StarfieldExploreSession session, string hint, i
                 StringComparer.OrdinalIgnoreCase)
             .Select(nfk =>
                 cache.TryResolve<INpcGetter>(nfk, out var n)
-                    ? $"      {nfk}  EDID={n.EditorID}"
+                    ? $"      {nfk}  EDID={n.EditorID}{TranslatedNameSuffix(n)}"
                     : $"      {nfk}  (Npc resolve failed)");
+        PrintLimited(summaryLines, listLimit);
+    }
+
+    return 0;
+}
+
+/// <summary>
+/// Lists <see cref="IPlanetBiomeGetter.Flora"/> rows: <see cref="IFloraGetter"/> + <see cref="IPlanetFloraGetter.Resource"/> misc (typical gather yield) + frequency.
+/// </summary>
+static int RunInspectPlanetFlora(StarfieldExploreSession session, string hint, int listLimit)
+{
+    var mod = session.StarfieldEsm;
+    var cache = session.LinkCache;
+    var h = hint.Trim();
+    if (h.Length == 0)
+    {
+        Console.Error.WriteLine("Empty planet hint.");
+        return 1;
+    }
+
+    var matches = mod.Planets
+        .Where(p =>
+            p.EditorID?.Contains(h, StringComparison.OrdinalIgnoreCase) == true
+            || p.FormKey.ToString().Contains(h, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    if (matches.Count == 0)
+    {
+        Console.WriteLine($"No planets matching hint \"{h}\" (EditorID substring or FormKey string fragment).");
+        return 0;
+    }
+
+    Console.WriteLine($"Planets matching \"{h}\": {matches.Count}");
+    Console.WriteLine(
+        "Source: Planet → PlanetBiome.Flora (Flora + Resource misc + frequency). " +
+        "Does not list POI / hand-placed flora outside this table.");
+
+    foreach (var planet in matches)
+    {
+        Console.WriteLine();
+        Console.WriteLine($"=== Planet {planet.FormKey}  EDID={planet.EditorID} ===");
+        var biomes = planet.Biomes;
+        if (biomes is null || biomes.Count == 0)
+        {
+            Console.WriteLine("(no biomes)");
+            continue;
+        }
+
+        var allFlora = new HashSet<FormKey>();
+
+        for (var bi = 0; bi < biomes.Count; bi++)
+        {
+            var pb = biomes[bi];
+            string? biomeEdid = null;
+            var biomeSuf = "";
+            if (!pb.Biome.IsNull && cache.TryResolve<IBiomeGetter>(pb.Biome.FormKey, out var br))
+            {
+                biomeEdid = br.EditorID;
+                biomeSuf = TranslatedNameSuffix(br);
+            }
+
+            var floraList = pb.Flora;
+            Console.WriteLine();
+            Console.WriteLine($"  [{bi}] PlanetBiome  Biome={biomeEdid}{biomeSuf}  ({pb.Biome.FormKey})");
+            if (floraList is null || floraList.Count == 0)
+            {
+                Console.WriteLine("      Flora: (empty)");
+                continue;
+            }
+
+            var slot = 0;
+            foreach (var pf in floraList)
+            {
+                if (pf.Flora.IsNull) continue;
+                var floraFk = pf.Flora.FormKey;
+                allFlora.Add(floraFk);
+                var resPart = pf.Resource.IsNull
+                    ? "Resource=(null)"
+                    : $"Resource {pf.Resource.FormKey}  ({DescribeComponent(cache, pf.Resource.FormKey)})";
+
+                cache.TryResolve<IFloraGetter>(floraFk, out var flRec);
+                var floraLine = flRec is not null
+                    ? $"Flora {floraFk}  EDID={flRec.EditorID}{TranslatedNameSuffix(flRec)}"
+                    : $"Flora {floraFk}  (IFloraGetter resolve failed)";
+
+                Console.WriteLine($"      Flora[{slot}]  Frequency={pf.Frequency}");
+                Console.WriteLine($"        → {floraLine}");
+                Console.WriteLine($"        → {resPart}");
+                slot++;
+            }
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("  --- Unique Flora (all biomes; --limit applies here; 0 = unlimited) ---");
+        var summaryLines = allFlora
+            .OrderBy(fk =>
+                cache.TryResolve<IFloraGetter>(fk, out var f) && f.EditorID is not null
+                    ? f.EditorID
+                    : fk.ToString(),
+                StringComparer.OrdinalIgnoreCase)
+            .Select(fk =>
+                cache.TryResolve<IFloraGetter>(fk, out var f)
+                    ? $"      {fk}  EDID={f.EditorID}{TranslatedNameSuffix(f)}"
+                    : $"      {fk}  (Flora resolve failed)");
         PrintLimited(summaryLines, listLimit);
     }
 
@@ -395,6 +510,38 @@ static void CollectNpcFormKeysFromFaunaSpawnTarget(
     {
         if (row.Reference.IsNull) continue;
         CollectNpcFormKeysFromFaunaSpawnTarget(row.Reference.FormKey, cache, visitedLeveledNpcFormKeys, outNpcFormKeys);
+    }
+}
+
+/// <summary>
+/// Planets matching <paramref name="hintTrimmed"/> (EditorID substring or FormKey string fragment) and every distinct leaf <see cref="INpcGetter"/> from their <see cref="IPlanetBiomeGetter.Fauna"/> graph.
+/// </summary>
+static void CollectLeafFaunaNpcFormKeysForPlanetHint(
+    IStarfieldModGetter mod,
+    ILinkCache cache,
+    string hintTrimmed,
+    out List<IPlanetGetter> matchedPlanets,
+    out HashSet<FormKey> leafNpcFormKeys)
+{
+    matchedPlanets = mod.Planets
+        .Where(p =>
+            p.EditorID?.Contains(hintTrimmed, StringComparison.OrdinalIgnoreCase) == true
+            || p.FormKey.ToString().Contains(hintTrimmed, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    leafNpcFormKeys = [];
+    foreach (var planet in matchedPlanets)
+    {
+        foreach (var pb in planet.Biomes ?? [])
+        {
+            foreach (var link in pb.Fauna ?? [])
+            {
+                if (link.IsNull)
+                    continue;
+                var vlev = new HashSet<FormKey>();
+                CollectNpcFormKeysFromFaunaSpawnTarget(link.FormKey, cache, vlev, leafNpcFormKeys);
+            }
+        }
     }
 }
 
@@ -564,7 +711,10 @@ static int RunInspectPenHerdPlanets(StarfieldExploreSession session)
     Console.WriteLine();
     Console.WriteLine("  Per herd keyword — planets (race bridge):");
     foreach (var hk in herdKwEdid.Keys.OrderBy(k => herdKwEdid[k] ?? "", StringComparer.Ordinal))
-        Console.WriteLine($"    {herdKwEdid[hk]}  →  {herdToPlanetsRace[hk].Count} planet(s)");
+    {
+        var kwSuf = cache.TryResolve<IKeywordGetter>(hk, out var kwh) ? TranslatedNameSuffix(kwh) : "";
+        Console.WriteLine($"    {herdKwEdid[hk]}  →  {herdToPlanetsRace[hk].Count} planet(s){kwSuf}");
+    }
     Console.WriteLine();
     Console.WriteLine("  Sample planets (up to 20 by EditorID), race-bridge tiers:");
     foreach (var planet in mod.Planets
@@ -584,7 +734,10 @@ static int RunInspectPenHerdPlanets(StarfieldExploreSession session)
 
     Console.WriteLine("ActorTypeHerd* keywords:");
     foreach (var kv in herdKwEdid.OrderBy(x => x.Value, StringComparer.Ordinal))
-        Console.WriteLine($"  {kv.Key}  {kv.Value}");
+    {
+        var kwSuf = cache.TryResolve<IKeywordGetter>(kv.Key, out var kwh) ? TranslatedNameSuffix(kwh) : "";
+        Console.WriteLine($"  {kv.Key}  {kv.Value}{kwSuf}");
+    }
 
     Console.WriteLine();
     Console.WriteLine(
@@ -597,7 +750,8 @@ static int RunInspectPenHerdPlanets(StarfieldExploreSession session)
     foreach (var hk in herdKwEdid.Keys.OrderBy(k => herdKwEdid[k] ?? "", StringComparer.Ordinal))
     {
         var ed = herdKwEdid[hk];
-        Console.WriteLine($"  {ed}  →  {herdToPlanets[hk].Count} planet(s)");
+        var kwSuf = cache.TryResolve<IKeywordGetter>(hk, out var kwh) ? TranslatedNameSuffix(kwh) : "";
+        Console.WriteLine($"  {ed}  →  {herdToPlanets[hk].Count} planet(s){kwSuf}");
     }
 
     Console.WriteLine();
@@ -629,13 +783,17 @@ static int RunInspectPlanetFloraMiscSubstr(StarfieldExploreSession session, stri
     var floraEdid = mod.Florae.ToDictionary(x => x.FormKey, x => x.EditorID);
     var map = BuildPlanetFloraByResourceMisc(mod, floraEdid);
     var miscByKey = mod.MiscItems.ToDictionary(x => x.FormKey);
+    var cache = session.LinkCache;
     var hits = new List<string>();
     foreach (var fk in map.Keys)
     {
         if (!miscByKey.TryGetValue(fk, out var misc)) continue;
         var e = misc.EditorID;
         if (e is not null && e.Contains(substr, StringComparison.OrdinalIgnoreCase))
-            hits.Add($"{fk}  {e}  ({map[fk].Count} rows)");
+        {
+            var nameSuf = TranslatedNameSuffix(misc);
+            hits.Add($"{fk}  {e}{nameSuf}  ({map[fk].Count} rows)");
+        }
     }
 
     hits.Sort(StringComparer.Ordinal);
@@ -649,6 +807,7 @@ static int RunInspectPlanetFloraMiscSubstr(StarfieldExploreSession session, stri
 static int RunInspectPlanetFloraForMisc(StarfieldExploreSession session, string miscEdid)
 {
     var mod = session.StarfieldEsm;
+    var cache = session.LinkCache;
     var floraEdid = mod.Florae.ToDictionary(x => x.FormKey, x => x.EditorID);
     var map = BuildPlanetFloraByResourceMisc(mod, floraEdid);
     var misc = mod.MiscItems.FirstOrDefault(m => m.EditorID == miscEdid);
@@ -664,9 +823,14 @@ static int RunInspectPlanetFloraForMisc(StarfieldExploreSession session, string 
         return 0;
     }
 
-    Console.WriteLine($"PlanetFlora rows for misc {miscEdid} ({misc.FormKey}): {rows.Count}");
+    Console.WriteLine(
+        $"PlanetFlora rows for misc {miscEdid} ({misc.FormKey}){TranslatedNameSuffix(misc)}: {rows.Count}");
     foreach (var row in rows.Take(40))
-        Console.WriteLine($"  Flora {row.FloraKey} EDID={row.FloraEdid}  Planet {row.PlanetKey} EDID={row.PlanetEdid}");
+    {
+        var floraSuf = cache.TryResolve<IFloraGetter>(row.FloraKey, out var fl) ? TranslatedNameSuffix(fl) : "";
+        Console.WriteLine(
+            $"  Flora {row.FloraKey} EDID={row.FloraEdid}{floraSuf}  Planet {row.PlanetKey} EDID={row.PlanetEdid}");
+    }
     if (rows.Count > 40)
         Console.WriteLine($"  … {rows.Count - 40} more");
 

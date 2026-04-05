@@ -32,6 +32,20 @@ static int DispatchInspect(StarfieldExploreSession session, string inspectToken,
         return RunInspectPlanetSurvey(session, inspectToken["planet-survey:".Length..]);
     if (inspectToken.StartsWith("planet-fauna:", StringComparison.Ordinal))
         return RunInspectPlanetFauna(session, inspectToken["planet-fauna:".Length..], listLimit);
+    if (inspectToken.StartsWith("planet-flora:", StringComparison.Ordinal))
+        return RunInspectPlanetFlora(session, inspectToken["planet-flora:".Length..], listLimit);
+    if (inspectToken.StartsWith("planet-fauna-detail:", StringComparison.Ordinal))
+        return RunInspectPlanetFaunaDetail(session, inspectToken["planet-fauna-detail:".Length..], listLimit);
+    if (inspectToken.StartsWith("planet-fauna-skin-table:", StringComparison.Ordinal))
+        return RunInspectPlanetFaunaSkinTable(session, inspectToken["planet-fauna-skin-table:".Length..], listLimit);
+    if (inspectToken.StartsWith("planet-fauna-loot-table:", StringComparison.Ordinal))
+        return RunInspectPlanetFaunaLootTable(session, inspectToken["planet-fauna-loot-table:".Length..], listLimit);
+    if (inspectToken.StartsWith("planet-fauna-keyword-table:", StringComparison.Ordinal))
+        return RunInspectPlanetFaunaKeywordTable(session, inspectToken["planet-fauna-keyword-table:".Length..], listLimit);
+    if (inspectToken.StartsWith("planet-fauna-extras-table:", StringComparison.Ordinal))
+        return RunInspectPlanetFaunaExtrasTable(session, inspectToken["planet-fauna-extras-table:".Length..], listLimit);
+    if (inspectToken.StartsWith("search-edid-substring:", StringComparison.Ordinal))
+        return RunSearchEdidSubstring(session, inspectToken["search-edid-substring:".Length..], listLimit, 30);
     if (inspectToken.StartsWith("inspect-npc:", StringComparison.Ordinal))
         return RunInspectNpc(session, inspectToken["inspect-npc:".Length..]);
     if (inspectToken == "game-environment")
@@ -46,6 +60,10 @@ static int DispatchInspect(StarfieldExploreSession session, string inspectToken,
         return RunInspectPenHerdPlanets(session);
     if (inspectToken == "pen-fauna-script-trace")
         return RunInspectPenFaunaScriptTrace(session);
+    if (inspectToken == "pen-fauna-tiers")
+        return RunInspectPenFaunaTiers(session);
+    if (inspectToken.StartsWith("planet-fauna-pen-bridge:", StringComparison.Ordinal))
+        return RunInspectPlanetFaunaPenBridge(session, inspectToken["planet-fauna-pen-bridge:".Length..]);
 
     Console.Error.WriteLine($"Unknown inspect token: {inspectToken}");
     return 1;

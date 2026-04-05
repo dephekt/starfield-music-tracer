@@ -29,7 +29,7 @@ static int RunInspectCobjsForOutputMisc(StarfieldExploreSession session, string 
 
     var fk = misc.FormKey;
     var hits = mod.ConstructibleObjects.Where(c => c.CreatedObject.FormKey == fk).ToList();
-    Console.WriteLine($"COBJs with CreatedObject -> {miscEdid} ({fk}): {hits.Count}");
+    Console.WriteLine($"COBJs with CreatedObject -> {miscEdid} ({fk}){TranslatedNameSuffix(misc)}: {hits.Count}");
     foreach (var c in hits)
     {
         Console.WriteLine($"  {c.FormKey} EDID={c.EditorID}");
@@ -56,7 +56,7 @@ static int RunInspectResourceGenForResource(StarfieldExploreSession session, str
         return 1;
     }
 
-    Console.WriteLine($"=== Resource {resourceEdid} ({res.FormKey}) — ResourceGenerationData ===");
+    Console.WriteLine($"=== Resource {resourceEdid} ({res.FormKey}){TranslatedNameSuffix(res)} — ResourceGenerationData ===");
     var resourceToRgd = BuildResourceToRgdFormKeysFullScan(mod);
     resourceToRgd.TryGetValue(res.FormKey, out var rgdKeySet);
     rgdKeySet ??= [];
@@ -130,7 +130,7 @@ static int RunInspectResource(StarfieldExploreSession session, string resourceEd
         return 1;
     }
 
-    Console.WriteLine($"Resource {r.FormKey} EDID={r.EditorID} ResourceType={r.ResourceType}");
+    Console.WriteLine($"Resource {r.FormKey} EDID={r.EditorID}{TranslatedNameSuffix(r)} ResourceType={r.ResourceType}");
     Console.WriteLine($"  Produce: {(r.Produce.IsNull ? "(null)" : r.Produce.FormKey.ToString())}");
     Console.WriteLine($"  List:    {(r.List.IsNull ? "(null)" : r.List.FormKey.ToString())}");
     var kws = r.Keywords;
@@ -141,7 +141,7 @@ static int RunInspectResource(StarfieldExploreSession session, string resourceEd
         {
             if (kw.IsNull) continue;
             if (cache.TryResolve<IKeywordGetter>(kw.FormKey, out var kg))
-                Console.WriteLine($"    {kw.FormKey}  EDID={kg.EditorID}");
+                Console.WriteLine($"    {kw.FormKey}  EDID={kg.EditorID}{TranslatedNameSuffix(kg)}");
             else
                 Console.WriteLine($"    {kw.FormKey}");
         }

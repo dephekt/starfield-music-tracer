@@ -389,5 +389,85 @@ static Dictionary<FormKey, List<(string Group, IMajorRecordGetter Rec)>> BuildBa
     return map;
 }
 
+/// <summary>
+/// Every enumerable major-record group on <paramref name="mod"/> (reflection on <see cref="IStarfieldModGetter"/>).
+/// </summary>
+static IEnumerable<(string Group, IMajorRecordGetter Rec)> EnumerateMajorRecords(IStarfieldModGetter mod)
+{
+    const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
+    foreach (var prop in mod.GetType().GetProperties(flags))
+    {
+        if (prop.GetIndexParameters().Length != 0) continue;
+        if (!typeof(IEnumerable).IsAssignableFrom(prop.PropertyType)) continue;
+        if (prop.PropertyType == typeof(string)) continue;
+        object? val;
+        try
+        {
+            val = prop.GetValue(mod);
+        }
+        catch
+        {
+            continue;
+        }
+
+        if (val is not IEnumerable seq) continue;
+
+        var batch = new List<(string Group, IMajorRecordGetter Rec)>();
+        try
+        {
+            foreach (var item in seq)
+            {
+                if (item is IMajorRecordGetter maj)
+                    batch.Add((prop.Name, maj));
+            }
+        }
+        catch
+        {
+            /* group enumeration can throw on some overlay shapes */
+        }
+
+        foreach (var pair in batch)
+            yield return pair;
+    }
+}
+
+/// <summary>
+/// Like <see cref="BuildBacklinksToFormKeys"/> but scans every <see cref="IFormLinkContainerGetter"/> major record on the mod (slow; for research).
+/// </summary>
+static Dictionary<FormKey, List<(string Group, IMajorRecordGetter Rec)>> BuildFormLinkBacklinksToFormKeysFullScan(
+    IStarfieldModGetter mod,
+    IReadOnlySet<FormKey> targets)
+{
+    var map = new Dictionary<FormKey, List<(string Group, IMajorRecordGetter Rec)>>();
+    if (targets.Count == 0) return map;
+
+    foreach (var (group, rec) in EnumerateMajorRecords(mod))
+    {
+        if (rec is not IFormLinkContainerGetter flc) continue;
+        try
+        {
+            foreach (var raw in flc.EnumerateFormLinks(true))
+            {
+                if (!TryGetFormKeyFromLinkEnumerationItem(raw, out var fk, out _)) continue;
+                if (fk == default || fk.IsNull || !targets.Contains(fk)) continue;
+                if (!map.TryGetValue(fk, out var list))
+                {
+                    list = [];
+                    map[fk] = list;
+                }
+
+                if (list.Exists(x => x.Rec.FormKey == rec.FormKey && x.Group == group)) continue;
+                list.Add((Group: group, Rec: rec));
+            }
+        }
+        catch
+        {
+            /* skip broken record */
+        }
+    }
+
+    return map;
+}
+
 
 }

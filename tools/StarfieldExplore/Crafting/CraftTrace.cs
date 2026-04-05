@@ -33,7 +33,8 @@ static bool TraceCraftTarget(
     }
 
     Console.WriteLine($"=== {targetIngestibleEdid} ===");
-    Console.WriteLine($"Ingestible: {ingestible.FormKey}  EDID={ingestible.EditorID}");
+    Console.WriteLine(
+        $"Ingestible: {ingestible.FormKey}  EDID={ingestible.EditorID}{TranslatedNameSuffix(ingestible)}");
 
     var cobj = mod.ConstructibleObjects.FirstOrDefault(c => c.CreatedObject.FormKey == ingestible.FormKey);
     if (cobj is null)
@@ -46,7 +47,7 @@ static bool TraceCraftTarget(
     var wb = cobj.WorkbenchKeyword.IsNull
         ? "(null)"
         : cobj.WorkbenchKeyword.TryResolve<IKeywordGetter>(cache, out var kw)
-            ? $"{cobj.WorkbenchKeyword.FormKey}  EDID={kw.EditorID}"
+            ? $"{cobj.WorkbenchKeyword.FormKey}  EDID={kw.EditorID}{TranslatedNameSuffix(kw)}"
             : cobj.WorkbenchKeyword.FormKey.ToString();
     Console.WriteLine($"  WorkbenchKeyword: {wb}");
     Console.WriteLine($"  CreatedObject:     {cobj.CreatedObject.FormKey}");
@@ -71,7 +72,7 @@ static bool TraceCraftTarget(
         .ToList();
     Console.WriteLine("  Quantities by FormKey:");
     foreach (var (fk, n) in qty)
-        Console.WriteLine($"    x{n}  {fk}");
+        Console.WriteLine($"    x{n}  {fk}  ({DescribeComponent(cache, fk, miscByFormKey, constructibleByFormKey)})");
 
     Console.WriteLine();
     Console.WriteLine("Gather hints (flora + planet resource gen + creature loot; not vendors / outpost husbandry):");
@@ -119,7 +120,8 @@ static bool TraceCraftTarget(
                     {
                         var planetSample = string.Join(", ", kv.Value.Planets.Where(p => !string.IsNullOrEmpty(p)).Take(4));
                         var more = kv.Value.Planets.Count > 4 ? $" +{kv.Value.Planets.Count - 4} planets" : "";
-                        return $"      Flora {kv.Key}  EDID={kv.Value.FloraEdid}  [planets: {planetSample}{more}]";
+                        var floraSuf = cache.TryResolve<IFloraGetter>(kv.Key, out var flw) ? TranslatedNameSuffix(flw) : "";
+                        return $"      Flora {kv.Key}  EDID={kv.Value.FloraEdid}{floraSuf}  [planets: {planetSample}{more}]";
                     }),
                 listLimit);
         }
@@ -180,7 +182,13 @@ static bool TraceCraftTarget(
             PrintLimited(
                 ingredientHits.Values
                     .OrderBy(f => f.Edid, StringComparer.Ordinal)
-                    .Select(f => $"      Flora {f.FloraKey}  EDID={f.Edid}"),
+                    .Select(f =>
+                    {
+                        var floraSuf = cache.TryResolve<IFloraGetter>(f.FloraKey, out var flw)
+                            ? TranslatedNameSuffix(flw)
+                            : "";
+                        return $"      Flora {f.FloraKey}  EDID={f.Edid}{floraSuf}";
+                    }),
                 listLimit);
         }
 
@@ -199,7 +207,11 @@ static bool TraceCraftTarget(
             PrintLimited(
                 lootNpcs.Values
                     .OrderBy(n => n.Edid, StringComparer.Ordinal)
-                    .Select(n => $"      Npc {n.NpcKey}  EDID={n.Edid}"),
+                    .Select(n =>
+                    {
+                        var npcSuf = cache.TryResolve<INpcGetter>(n.NpcKey, out var npc) ? TranslatedNameSuffix(npc) : "";
+                        return $"      Npc {n.NpcKey}  EDID={n.Edid}{npcSuf}";
+                    }),
                 listLimit);
         }
         else
@@ -276,7 +288,7 @@ static string FormatProduceLabel(
     IStarfieldModGetter mod)
 {
     if (miscByFormKey.TryGetValue(produceFk, out var pm))
-        return $"MiscItem EDID={pm.EditorID}";
+        return $"MiscItem EDID={pm.EditorID}{TranslatedNameSuffix(pm)}";
     if (constructibleByFormKey.TryGetValue(produceFk, out var refineCobj))
         return $"ConstructibleObject EDID={refineCobj.EditorID}  -> CreatedObject {refineCobj.CreatedObject.FormKey}";
     if (!constructibleByFormKey.ContainsKey(produceFk))

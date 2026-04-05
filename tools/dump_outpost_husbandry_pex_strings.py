@@ -13,6 +13,7 @@ Use ``--all`` to print every ASCII run (still de-duplicated per file).
 Usage:
   export STARFIELD_DATA=/path/to/Starfield/Data
   ./tools/dump_outpost_husbandry_pex_strings.py
+  ./tools/dump_outpost_husbandry_pex_strings.py --only fauna
   ./tools/dump_outpost_husbandry_pex_strings.py --all > /tmp/husbandry_pex_strings.txt
 
 Requires: Python 3 stdlib only.
@@ -39,6 +40,13 @@ HUSBANDRY_PEX = (
     "scripts/outpostharvesterflorascript.pex",
     "scripts/outpostharvesterfloraplanterscript.pex",
 )
+
+# Keys for ``--only`` (basename without path).
+_ONLY_MAP = {
+    "fauna": ("scripts/outpostharvesterfaunascript.pex",),
+    "flora": ("scripts/outpostharvesterflorascript.pex",),
+    "planter": ("scripts/outpostharvesterfloraplanterscript.pex",),
+}
 
 # Broad filter: husbandry / scanning / resources / workshop / flora-fauna context.
 _FILTER_RE = re.compile(
@@ -84,6 +92,12 @@ def main() -> None:
         default=4,
         help="Minimum string length (default: 4)",
     )
+    ap.add_argument(
+        "--only",
+        choices=("fauna", "flora", "planter", "all"),
+        default="all",
+        help="Limit to one harvester .pex (default: all three)",
+    )
     args = ap.parse_args()
 
     data = args.data or Path(
@@ -96,7 +110,9 @@ def main() -> None:
     if not ba2.is_file():
         raise SystemExit(f"BA2 not found: {ba2}")
 
-    for rel in HUSBANDRY_PEX:
+    pex_list = HUSBANDRY_PEX if args.only == "all" else _ONLY_MAP[args.only]
+
+    for rel in pex_list:
         hit = extract_named_file(ba2, rel)
         if hit is None:
             print(f"=== MISSING {rel!r} in {ba2} ===", file=sys.stderr)

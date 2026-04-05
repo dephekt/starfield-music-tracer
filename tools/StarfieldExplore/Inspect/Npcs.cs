@@ -40,14 +40,14 @@ static int RunInspectNpc(StarfieldExploreSession session, string hint)
 
     Console.WriteLine($"Npc matching \"{h}\": {matches.Count}");
     Console.WriteLine(
-        "Prints **Name** (when present), **Race**, **DefaultTemplate** chain, **Keywords**, **DeathItem**. " +
-        "Clearer than `PCM_*` slot EDIDs for *classic* creatures; many planet fauna use **CCT** (**`CCT_DummyRace`** → **`CCT_Creature`**) — then there is no single Race EDID like “Coralcrawler”; mesh/variant lives in CCT-related data.");
+        "Prints **Name**, **Race** (`RNAM`), **AttackRace** (`ATKR`), **Skin** (`WNAM`), **TemplateActors.TraitTemplate**, **Npc.Components** (**FullNameComponent** FULL, **FormLinkDataComponent** → race/armor), **DefaultTemplate** chain, **Keywords**, **DeathItem**. " +
+        "Planet **PCM** fauna often has **`CCT_DummyRace`** on RNAM; CK *Traits* may match **ATKR**/**WNAM** or the **FormLinkData**/**FullName** component layer when those fields are null.");
     Console.WriteLine();
 
     foreach (var npc in matches)
     {
         Console.WriteLine($"=== Npc {npc.FormKey}  EDID={npc.EditorID} ===");
-        Console.WriteLine($"  Name (localized): {FormatNpcLocalizedName(npc)}");
+        Console.WriteLine($"  Name (localized): {FormatNpcLocalizedName(cache, npc)}");
 
         if (npc.Race.IsNull)
             Console.WriteLine("  Race: (null)");
@@ -59,12 +59,14 @@ static int RunInspectNpc(StarfieldExploreSession session, string hint)
                 || re.Contains("DummyRace", StringComparison.OrdinalIgnoreCase))
             {
                 Console.WriteLine(
-                    "  Note: **CCT** (Creature Creation Toolkit) dummy race — visible species is not this Race EDID; " +
-                    "chunk/variant data on **`CCT_Creature`** (and related records) drives the mesh; colloquial names often need in-game UI, wikis, or a deeper CCT export.");
+                    "  Note: **RNAM** is CCT dummy — use **AttackRace** + **Skin** + **Components** below (matches CK **Traits** tab).");
             }
         }
         else
             Console.WriteLine($"  Race: {npc.Race.FormKey}  (resolve failed)");
+
+        PrintNpcCctIdentityInspect(cache, npc);
+        PrintNpcComponentTraitsInspect(cache, npc);
 
         Console.WriteLine("  DefaultTemplate chain (Npc → Npc, max depth 8):");
         PrintNpcTemplateChain(cache, npc, 8);
@@ -112,22 +114,59 @@ static int RunInspectNpc(StarfieldExploreSession session, string hint)
     return 0;
 }
 
-static string FormatNpcLocalizedName(INpcGetter npc)
+static void PrintNpcCctIdentityInspect(ILinkCache cache, INpcGetter npc)
 {
-    try
+    if (npc.AttackRace.IsNull)
+        Console.WriteLine("  AttackRace (ATKR — CK Traits race): (null)");
+    else if (cache.TryResolve<IRaceGetter>(npc.AttackRace.FormKey, out var ar))
+        Console.WriteLine(
+            $"  AttackRace (ATKR — CK Traits race): {npc.AttackRace.FormKey}  EDID={ar.EditorID}{TranslatedNameSuffix(ar)}");
+    else
+        Console.WriteLine($"  AttackRace (ATKR): {npc.AttackRace.FormKey}  (resolve failed)");
+
+    if (npc.Skin.IsNull)
+        Console.WriteLine("  Skin (WNAM — CK Traits skin): (null)");
+    else if (cache.TryResolve<IArmorGetter>(npc.Skin.FormKey, out var skinArm))
+        Console.WriteLine(
+            $"  Skin (WNAM — CK Traits skin): {npc.Skin.FormKey}  EDID={skinArm.EditorID}{TranslatedNameSuffix(skinArm)}");
+    else
+        Console.WriteLine($"  Skin (WNAM): {npc.Skin.FormKey}  (resolve failed)");
+
+    var ta = npc.TemplateActors;
+    if (ta is null || ta.TraitTemplate.IsNull)
+        Console.WriteLine("  TemplateActors.TraitTemplate: (null)");
+    else
     {
-        var nameGetter = npc.Name;
-        if (nameGetter is null)
-            return "(null Name — use CK / strings pipeline for display name)";
-        var s = nameGetter.String ?? "";
-        return string.IsNullOrWhiteSpace(s)
-            ? "(empty — check string BA2 / STARFIELD_TARGET_LANGUAGE; Race / DefaultTemplate / CCT keywords below)"
-            : s;
+        var fk = ta.TraitTemplate.FormKey;
+        if (cache.TryResolve<IMajorRecordGetter>(fk, out var maj) && maj.EditorID is not null)
+            Console.WriteLine($"  TemplateActors.TraitTemplate: {fk}  EDID={maj.EditorID}{DisplayNameSuffixForMajor(maj)}");
+        else
+            Console.WriteLine($"  TemplateActors.TraitTemplate: {fk}  (resolve failed)");
     }
-    catch (Exception ex)
-    {
-        return $"({ex.GetType().Name}: {ex.Message})";
-    }
+}
+
+static void PrintNpcComponentTraitsInspect(ILinkCache cache, INpcGetter npc)
+{
+    var full = FormatNpcComponentFullName(npc);
+    if (string.IsNullOrEmpty(full))
+        Console.WriteLine("  Components / FullNameComponent (FULL): (empty)");
+    else
+        Console.WriteLine(
+            "  Components / FullNameComponent (FULL): \""
+            + full.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)
+            + "\"");
+
+    var races = FormatNpcFormLinkDataRaceEdids(cache, npc);
+    if (string.IsNullOrEmpty(races))
+        Console.WriteLine("  Components / FormLinkDataComponent → Race: (none)");
+    else
+        Console.WriteLine($"  Components / FormLinkDataComponent → Race: {races}");
+
+    var skins = FormatNpcFormLinkDataSkinArmorEdids(cache, npc);
+    if (string.IsNullOrEmpty(skins))
+        Console.WriteLine("  Components / FormLinkDataComponent → Armor (Skin-preferring): (none)");
+    else
+        Console.WriteLine($"  Components / FormLinkDataComponent → Armor (Skin-preferring): {skins}");
 }
 
 static void PrintNpcTemplateChain(ILinkCache cache, INpcGetter start, int maxDepth)
@@ -143,7 +182,8 @@ static void PrintNpcTemplateChain(ILinkCache cache, INpcGetter start, int maxDep
             return;
         }
 
-        Console.WriteLine($"    [{depth}] {cur.FormKey}  EDID={cur.EditorID}");
+        Console.WriteLine(
+            $"    [{depth}] {cur.FormKey}  EDID={cur.EditorID}{TranslatedNameSuffix(cur)}");
         if (cur.DefaultTemplate.IsNull)
         {
             if (depth == 0)
@@ -157,13 +197,44 @@ static void PrintNpcTemplateChain(ILinkCache cache, INpcGetter start, int maxDep
             return;
         }
 
-        Console.WriteLine($"      DefaultTemplate → {cur.DefaultTemplate.FormKey}  EDID={parent.EditorID}");
+        Console.WriteLine(
+            $"      DefaultTemplate → {cur.DefaultTemplate.FormKey}  EDID={parent.EditorID}{TranslatedNameSuffix(parent)}");
         cur = parent;
         depth++;
     }
 
     if (depth >= maxDepth && cur is not null && !cur.DefaultTemplate.IsNull)
         Console.WriteLine("    … (truncated at max depth)");
+}
+
+/// <summary>Expand <see cref="INpcGetter.DeathItem"/> through <see cref="ILeveledItemGetter"/> (same rules as <see cref="BuildLootNpcIndex"/>).</summary>
+static void PrintNpcDeathItemLootLeaves(ILinkCache cache, INpcGetter npc)
+{
+    if (npc.DeathItem.IsNull)
+    {
+        Console.WriteLine("  DeathItem: (null)");
+        return;
+    }
+
+    var dfk = npc.DeathItem.FormKey;
+    Console.WriteLine($"  DeathItem root: {dfk}  ({DescribeComponent(cache, dfk)})");
+    var leaves = new HashSet<FormKey>();
+    var levVisited = new HashSet<FormKey>();
+    ExpandItemKeysFromFormKey(dfk, cache, levVisited, leaves);
+    if (leaves.Count == 0)
+    {
+        Console.WriteLine(
+            "  DeathItem → leaf item-like: (none — may be non-item references, empty LL, or unresolved links)");
+        return;
+    }
+
+    Console.WriteLine($"  DeathItem → leaf item-like ({leaves.Count}):");
+    foreach (var lf in leaves.OrderBy(x =>
+                 cache.TryResolve<IMiscItemGetter>(x, out var m) && m.EditorID is not null
+                     ? m.EditorID
+                     : x.ToString(),
+                 StringComparer.OrdinalIgnoreCase))
+        Console.WriteLine($"    • {lf}  ({DescribeComponent(cache, lf)})");
 }
 
 

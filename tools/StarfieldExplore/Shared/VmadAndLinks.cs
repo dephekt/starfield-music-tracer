@@ -10,6 +10,137 @@ using Mutagen.Bethesda.Starfield;
 
 partial class Program
 {
+/// <summary>One <c>FaunaCreation</c> struct slot from <see cref="IVirtualMachineAdapterGetter"/> (herd keyword + count).</summary>
+readonly record struct FaunaCreationSlotExtract(int SlotIndex, FormKey? CreatureKeyword, int? CreateCount);
+
+static int? TryReadScriptIntPropertyData(IScriptPropertyGetter msp)
+{
+    const BindingFlags bf = BindingFlags.Public | BindingFlags.Instance;
+    var dp = msp.GetType().GetProperty("Data", bf);
+    if (dp?.GetValue(msp) is not { } v)
+        return null;
+    return v switch
+    {
+        int i => i,
+        uint u => (int)u,
+        short s => s,
+        ushort us => us,
+        long l => (int)l,
+        _ => null,
+    };
+}
+
+/// <summary>Parse <paramref name="structListPropertyName"/> on <paramref name="scriptName"/> (e.g. <c>FaunaCreation</c> on <c>OutpostHarvesterFaunaScript</c>).</summary>
+static IReadOnlyList<FaunaCreationSlotExtract> TryExtractFaunaCreationSlots(
+    IVirtualMachineAdapterGetter? vmad,
+    string scriptName,
+    string structListPropertyName = "FaunaCreation")
+{
+    var rows = new List<FaunaCreationSlotExtract>();
+    if (vmad is null)
+        return rows;
+
+    const BindingFlags bf = BindingFlags.Public | BindingFlags.Instance;
+    for (var si = 0; si < vmad.Scripts.Count; si++)
+    {
+        IScriptEntryGetter scriptEnt;
+        try
+        {
+            scriptEnt = vmad.Scripts[si];
+        }
+        catch
+        {
+            continue;
+        }
+
+        string? sn;
+        try
+        {
+            sn = scriptEnt.Name;
+        }
+        catch
+        {
+            continue;
+        }
+
+        if (!string.Equals(sn, scriptName, StringComparison.OrdinalIgnoreCase))
+            continue;
+
+        IReadOnlyList<IScriptPropertyGetter> props;
+        try
+        {
+            props = scriptEnt.Properties;
+        }
+        catch
+        {
+            continue;
+        }
+
+        for (var pi = 0; pi < props.Count; pi++)
+        {
+            var p = props[pi];
+            string? pn;
+            try
+            {
+                pn = p.Name;
+            }
+            catch
+            {
+                continue;
+            }
+
+            if (!string.Equals(pn, structListPropertyName, StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (!p.GetType().Name.Contains("StructList", StringComparison.Ordinal))
+                continue;
+            var structsProp = p.GetType().GetProperty("Structs", bf);
+            if (structsProp?.GetValue(p) is not IList structList)
+                continue;
+
+            for (var st = 0; st < structList.Count; st++)
+            {
+                var entry = structList[st];
+                if (entry is null)
+                    continue;
+                FormKey? ck = null;
+                int? cc = null;
+                var memProp = entry.GetType().GetProperty("Members", bf);
+                if (memProp?.GetValue(entry) is not IList members)
+                    continue;
+
+                for (var mi = 0; mi < members.Count; mi++)
+                {
+                    if (members[mi] is not IScriptPropertyGetter msp)
+                        continue;
+                    string? mn;
+                    try
+                    {
+                        mn = msp.Name;
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    if (string.Equals(mn, "CreatureKeyword", StringComparison.OrdinalIgnoreCase)
+                        && msp.GetType().Name.Contains("Object", StringComparison.Ordinal))
+                    {
+                        var obj = msp.GetType().GetProperty("Object")?.GetValue(msp);
+                        if (obj?.GetType().GetProperty("FormKey")?.GetValue(obj) is FormKey fk && fk != default && !fk.IsNull)
+                            ck = fk;
+                    }
+                    else if (string.Equals(mn, "createCount", StringComparison.OrdinalIgnoreCase))
+                        cc = TryReadScriptIntPropertyData(msp);
+                }
+
+                rows.Add(new FaunaCreationSlotExtract(st, ck, cc));
+            }
+        }
+    }
+
+    return rows;
+}
+
 static IVirtualMachineAdapterGetter? TryGetVirtualMachineAdapter(IMajorRecordGetter rec)
 {
     var p = rec.GetType().GetProperty("VirtualMachineAdapter", BindingFlags.Public | BindingFlags.Instance);
@@ -442,7 +573,7 @@ static void DumpContainerKeywordsAndVmad(
     IReadOnlyDictionary<FormKey, IMiscItemGetter> miscByFormKey,
     IReadOnlyDictionary<FormKey, IConstructibleObjectGetter> constructibleByFormKey)
 {
-    Console.WriteLine($"{indent}Container {cont.FormKey}  EDID={cont.EditorID}");
+    Console.WriteLine($"{indent}Container {cont.FormKey}  EDID={cont.EditorID}{TranslatedNameSuffix(cont)}");
     try
     {
         var kws = cont.Keywords;
@@ -455,7 +586,7 @@ static void DumpContainerKeywordsAndVmad(
             {
                 if (lk.IsNull) continue;
                 if (cache.TryResolve<IKeywordGetter>(lk.FormKey, out var kw))
-                    Console.WriteLine($"{indent}    {lk.FormKey}  {kw.EditorID}");
+                    Console.WriteLine($"{indent}    {lk.FormKey}  {kw.EditorID}{TranslatedNameSuffix(kw)}");
                 else
                     Console.WriteLine($"{indent}    {lk.FormKey}");
             }
@@ -486,8 +617,8 @@ static void DumpResolvedFormLinksCap(
     string indent,
     int cap,
     ILinkCache cache,
-    IReadOnlyDictionary<FormKey, IMiscItemGetter> miscByFormKey,
-    IReadOnlyDictionary<FormKey, IConstructibleObjectGetter> constructibleByFormKey)
+    IReadOnlyDictionary<FormKey, IMiscItemGetter>? miscByFormKey,
+    IReadOnlyDictionary<FormKey, IConstructibleObjectGetter>? constructibleByFormKey)
 {
     var n = 0;
     try

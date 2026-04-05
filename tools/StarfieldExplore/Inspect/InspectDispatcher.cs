@@ -60,6 +60,8 @@ static int DispatchInspect(StarfieldExploreSession session, string inspectToken,
         return RunInspectPenHerdPlanets(session);
     if (inspectToken == "pen-fauna-script-trace")
         return RunInspectPenFaunaScriptTrace(session);
+    if (inspectToken == "fauna-production-index")
+        return RunInspectFaunaProductionIndex(session, listLimit);
     if (inspectToken == "pen-fauna-tiers")
         return RunInspectPenFaunaTiers(session);
     if (inspectToken.StartsWith("planet-fauna-pen-bridge:", StringComparison.Ordinal))

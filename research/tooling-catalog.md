@@ -33,6 +33,7 @@ Run from repo: `dotnet run --project tools/StarfieldExplore` (optional `STARFIEL
 - `--inspect-pen-fauna-tiers` — **TSV**: `**OutpostBuilderOrganicFauna01`…`03**` → VMAD `**FaunaCreation**` (`CreatureKeyword`, `createCount`) per slot ([outpost-organic-husbandry.md](outpost-organic-husbandry.md)).
 - `--planet-fauna-pen-bridge=HINT` — planets matching hint: leaf fauna **Npc** count vs each tier’s `**FaunaCreation**` keyword set (static join; not scan state) ([outpost-organic-husbandry.md](outpost-organic-husbandry.md)).
 - `--inspect-pen-fauna-script-trace` — `**OutpostHarvesterFaunaScript**` container VMAD → `**SQ_Parent**`, faction, `**HandScannerTarget**` **ActorValueInformation**, empty quest shell + quest VMAD dump ([outpost-organic-husbandry.md](outpost-organic-husbandry.md)).
+- `--inspect-fauna-production-index` — all majors carrying `**OutpostHarvesterFaunaScript**`; **TSV** of flattened **ScriptObject** / **StructList** FormKeys (**FaunaCreation**, link keywords, etc.); union of targets + full-mod **FormLink** backlinks (**`--limit`** = max referrers per target, **`0`** = unlimited); same harvester-hint **Globals** list as **`--inspect-outpost-harvesters`** ([outpost-papyrus-notes.md](outpost-papyrus-notes.md)).
 
 ## Python helpers (`tools/`)
 

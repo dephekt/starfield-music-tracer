@@ -152,6 +152,12 @@ public static class CliArguments
                 continue;
             }
 
+            if (string.Equals(a, "--inspect-fauna-production-index", StringComparison.OrdinalIgnoreCase))
+            {
+                inspectToken = "fauna-production-index";
+                continue;
+            }
+
             if (string.Equals(a, "--inspect-pen-fauna-tiers", StringComparison.OrdinalIgnoreCase))
             {
                 inspectToken = "pen-fauna-tiers";
@@ -212,6 +218,7 @@ public static class CliArguments
               --inspect-pen-fauna-tiers       TSV: OutpostBuilderOrganicFauna01…03 → VMAD FaunaCreation CreatureKeyword + createCount (pen-side slots); exit
               --planet-fauna-pen-bridge=HINT  Planets matching hint: leaf fauna Npcs vs each tier’s FaunaCreation keywords; exit
               --inspect-pen-fauna-script-trace  OutpostHarvesterFaunaScript VMAD → linked quest / faction / HandScannerTarget + SQ_Parent quest VMAD/objectives (no .pex); exit
+              --inspect-fauna-production-index  Full mod: all majors with OutpostHarvesterFaunaScript VMAD; TSV of nested ScriptObject/struct FormKeys; distinct targets; FormLink backlinks (--limit caps referrers per target; 0 = all); harvester-hint Globals; exit
               --help                          This text
 
             Data: STARFIELD_DATA (folder containing Starfield.esm). Load order: set STARFIELD_PLUGINS_TXT (full path to Plugins.txt) or STARFIELD_LOAD_ORDER (comma-separated plugin filenames). Optional: STARFIELD_TARGET_LANGUAGE (Mutagen Language enum name) for string resolution.

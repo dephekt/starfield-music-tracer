@@ -147,6 +147,159 @@ static IVirtualMachineAdapterGetter? TryGetVirtualMachineAdapter(IMajorRecordGet
     return p?.GetValue(rec) as IVirtualMachineAdapterGetter;
 }
 
+static bool VmadHasScriptNamed(IVirtualMachineAdapterGetter? vmad, string scriptName)
+{
+    if (vmad is null) return false;
+    for (var si = 0; si < vmad.Scripts.Count; si++)
+    {
+        string? sn;
+        try
+        {
+            sn = vmad.Scripts[si].Name;
+        }
+        catch
+        {
+            continue;
+        }
+
+        if (string.Equals(sn, scriptName, StringComparison.OrdinalIgnoreCase))
+            return true;
+    }
+
+    return false;
+}
+
+static IScriptEntryGetter? TryGetVmadScriptEntry(IVirtualMachineAdapterGetter? vmad, string scriptName)
+{
+    if (vmad is null) return null;
+    for (var si = 0; si < vmad.Scripts.Count; si++)
+    {
+        IScriptEntryGetter ent;
+        try
+        {
+            ent = vmad.Scripts[si];
+        }
+        catch
+        {
+            continue;
+        }
+
+        string? sn;
+        try
+        {
+            sn = ent.Name;
+        }
+        catch
+        {
+            continue;
+        }
+
+        if (string.Equals(sn, scriptName, StringComparison.OrdinalIgnoreCase))
+            return ent;
+    }
+
+    return null;
+}
+
+/// <summary>Walk <paramref name="script"/> properties: every <c>ScriptObjectProperty</c> FormKey and nested <c>StructList</c> members (e.g. <c>FaunaCreation</c>, <c>ResourceGlobals</c>).</summary>
+static void CollectObjectFormKeysFromScriptEntry(
+    IScriptEntryGetter script,
+    List<(string Path, FormKey FormKey)> rows,
+    int maxDepth = 8)
+{
+    IReadOnlyList<IScriptPropertyGetter> props;
+    try
+    {
+        props = script.Properties;
+    }
+    catch
+    {
+        return;
+    }
+
+    for (var pi = 0; pi < props.Count; pi++)
+    {
+        string? pn;
+        try
+        {
+            pn = props[pi].Name;
+        }
+        catch
+        {
+            continue;
+        }
+
+        CollectFormKeysFromScriptProperty(props[pi], pn ?? $"prop{pi}", rows, 0, maxDepth);
+    }
+}
+
+static void CollectFormKeysFromScriptProperty(
+    IScriptPropertyGetter prop,
+    string path,
+    List<(string Path, FormKey FormKey)> rows,
+    int depth,
+    int maxDepth)
+{
+    if (depth > maxDepth) return;
+    const BindingFlags bf = BindingFlags.Public | BindingFlags.Instance;
+    string tn;
+    try
+    {
+        tn = prop.GetType().Name;
+    }
+    catch
+    {
+        return;
+    }
+
+    if (tn.Contains("Object", StringComparison.Ordinal))
+    {
+        var obj = prop.GetType().GetProperty("Object")?.GetValue(prop);
+        if (obj?.GetType().GetProperty("FormKey")?.GetValue(obj) is FormKey fk && fk != default && !fk.IsNull)
+            rows.Add((path, fk));
+        return;
+    }
+
+    if (tn.Contains("StructList", StringComparison.Ordinal))
+    {
+        var structsProp = prop.GetType().GetProperty("Structs", bf);
+        if (structsProp?.GetValue(prop) is not IList structList) return;
+        for (var si = 0; si < structList.Count; si++)
+        {
+            var entry = structList[si];
+            if (entry is null) continue;
+            var memProp = entry.GetType().GetProperty("Members", bf);
+            if (memProp?.GetValue(entry) is not IList members) continue;
+            for (var mi = 0; mi < members.Count; mi++)
+            {
+                if (members[mi] is not IScriptPropertyGetter msp) continue;
+                string? mn;
+                try
+                {
+                    mn = msp.Name;
+                }
+                catch
+                {
+                    continue;
+                }
+
+                CollectFormKeysFromScriptProperty(msp, $"{path}[{si}].{mn}", rows, depth + 1, maxDepth);
+            }
+        }
+
+        return;
+    }
+
+    if (!tn.Contains("List", StringComparison.Ordinal)) return;
+    var itemsProp = prop.GetType().GetProperty("Items") ?? prop.GetType().GetProperty("Data");
+    if (itemsProp?.GetValue(prop) is not IList list) return;
+    for (var li = 0; li < list.Count; li++)
+    {
+        if (list[li] is IScriptPropertyGetter lsp)
+            CollectFormKeysFromScriptProperty(lsp, $"{path}[{li}]", rows, depth + 1, maxDepth);
+    }
+}
+
 /// <summary>Expand <see cref="ScriptStructListProperty"/> (e.g. FaunaCreation): each struct has Members as nested script properties.</summary>
 static void DumpScriptStructListExpanded(
     IScriptPropertyGetter structListProp,

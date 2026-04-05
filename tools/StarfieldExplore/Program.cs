@@ -65,7 +65,7 @@ using (session)
     Console.WriteLine($"ResourceGenerationData records in ESM: {mod.ResourceGenerationData.Count()}");
     Console.WriteLine(
         "Outpost organic fauna/flora: FormLists OutpostBuilderOrganic_FaunaList / _FloraList list tier COBJs (not creature/plant whitelists). " +
-        "Use --inspect-husbandry, --inspect-outpost-harvesters, --inspect-outpost-husbandry-cells, --inspect-pen-herd-planets, --inspect-pen-fauna-script-trace (fauna pen VMAD → quest / scanner).");
+        "Use --inspect-husbandry, --inspect-outpost-harvesters, --inspect-outpost-husbandry-cells, --inspect-pen-herd-planets, --inspect-pen-fauna-script-trace, --inspect-fauna-production-index (full VMAD/backlink dump for fauna harvester script).");
     var lootNpcsByItemKey = BuildLootNpcIndex(mod, cache);
     var cobjOutputToInputs = BuildCobjOutputToInputs(mod);
 

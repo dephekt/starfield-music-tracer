@@ -71,6 +71,38 @@ This harvester script **sets scanned on spawned pen animals**; **global scan / z
 | `sq_parentscript` | Planet trait scan pipeline, zoology harvest counters, outpost attacks — **not** organic AV picker |
 | `planettraitscantargetscript` | **`OnScanned`** → **`SQ_Parent.DiscoverMatchingPlanetTraits`**; ties hand scanner to trait discovery |
 | `outpostcontainerscript` | **ContainerMenu** + inventory shuffling between linked containers — **not** organic production UI |
+| `herdcontrolscript` | Encounter **herd flee** AI (**`HerdKeyword`**, **`DMP_Herd`** AV) — **not** pen **`FaunaCreation`** / **`ActorTypeHerd*`** |
+| `flora` (native) | **`Flora`** extends **Activator** — no Papyrus body (engine-only) |
+| `floraonharvestscript` | World **flora** **`OnActivate`** → optional **global** / **quest stage** (content hooks, not greenhouse) |
+| `outpostbuildermenuscript` | **`ShowWorkshopBuilderMenu()`** on linked builder or self — **native** workshop UI entry |
+| `mq101outpostharvesterscript` | **MQ101** tutorial only: **`OnWorkshopObjectPlaced`** advances quest in one **Location** |
+
+---
+
+## `HerdControlScript` vs pen “herd” (decompiled)
+
+**Two different meanings of “herd” in Starfield:**
+
+| Concept | Where it lives | What it does |
+|--------|----------------|--------------|
+| **Pen herd size** | **`OutpostHarvesterFaunaScript`** + container VMAD **`FaunaCreation`** | **`CreatureKeyword`** (vanilla: **`ActorTypeHerdLarge`** / **Medium** / **Small**) + **`createCount`** — picks **how many** pen animals after **`GetActorBaseForResource`** |
+| **`HerdControlScript`** | Placed ref + **`scripts/herdcontrolscript.pex`** | **World encounter** behavior: **`FindAllReferencesWithKeyword(HerdKeyword)`** (authoring comment: **`DMP_TypeHerd`**), registers **`OnCombatStateChanged`**, moves a **flee master marker**, toggles **`DMP_Herd`** on actors for **packages**, optional **fallback** fighter |
+
+**`HerdControlScript`** has **no** **`OrganicResourceAV`**, **`FaunaCreation`**, **`GetActorBaseForResource`**, or workshop harvester APIs — it is **AI choreography** for wildlife-style setups, not organic production.
+
+---
+
+## `Flora` / `FloraOnHarvestScript` (decompiled)
+
+- **`Flora.psc`** — `ScriptName Flora Extends Activator Native hidden` only. No scripted logic; flora **gameplay** is native + other scripts attached to refs.
+- **`FloraOnHarvestScript`** — **`OnActivate`** when the **player** activates the ref: optionally sets **`GlobalToSet`** to **`ValueToSet`** and/or **`QuestToSetStage.SetStage(StageToSet)`**. Generic **content** hook for “player harvested / used this flora,” **not** tied to **`OutpostHarvesterFloraScript`** or **`GetFloraForResource`**.
+
+---
+
+## `OutpostBuilderMenuScript` / `MQ101OutpostHarvesterScript` (decompiled)
+
+- **`OutpostBuilderMenuScript`:** **`OnActivate`** → **`GetLinkedRef(LinkOutpostBuilder)`** → **`ShowWorkshopBuilderMenu()`** on that ref, else on **`Self`**. Confirms the **outpost builder** is opened through the **native workshop menu** API; there is **no** branching here for organic modules — any organic-specific UI is **inside** that native menu + harvester **`OnBuilderMenuSelect`** path.
+- **`MQ101OutpostHarvesterScript`:** **`OnWorkshopObjectPlaced`** — if the player is in **`SystemNarionPlanetAnselonMoonNexum`** and **MQ101** stage 900 not done, sets stage **740**. Tutorial **quest bookkeeping** only.
 
 ---
 

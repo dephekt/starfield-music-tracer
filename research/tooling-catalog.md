@@ -5,7 +5,7 @@
 
 ## StarfieldExplore (`tools/StarfieldExplore`)
 
-Run from repo: `dotnet run --project tools/StarfieldExplore` (optional `STARFIELD_DATA`). Deep dives on acquisition and husbandry are in the topic docs above; this section lists **CLI entry points**.
+Run from repo: `dotnet run --project tools/StarfieldExplore` (optional `STARFIELD_DATA`). **Required:** **`STARFIELD_PLUGINS_TXT`** (full path to `plugins.txt`) **or** **`STARFIELD_LOAD_ORDER`** (comma-separated plugin filenames) so **`GameEnvironment`** + string BA2 resolution match the game. Optional **`STARFIELD_TARGET_LANGUAGE`**: Mutagen **`Language`** enum name for string resolution. Deep dives on acquisition and husbandry are in the topic docs above; this section lists **CLI entry points**.
 
 ### Debug CLI (StarfieldExplore)
 
@@ -14,6 +14,9 @@ Run from repo: `dotnet run --project tools/StarfieldExplore` (optional `STARFIEL
 - `--cobjs-for-output-misc=OrgCommonToxin` — COBJs that output the stackable misc (water / fauna variants).
 - `--resourcegen-resource=ResInorgCommonArgon_G` — full `**ResourceGenerationData`** scan for that `**IResourceGetter**` + biome `**ResourceGeneration**` rows + `**IPlanet**` `**EnumerateFormLinks**` referrers to those RGD FormKeys (see [crafting-and-resources.md](crafting-and-resources.md) inorganics / RGD chain).
 - `--planet-survey=AltairIIPlanetData` — `**PlanetBiome**` + `**IBiomeGetter.ResourceGeneration**` → RGD → resources for matching planet(s).
+- `--planet-fauna=Serpentis` — same planet matching hint; `**PlanetBiome.Fauna**` per biome (direct `**Npc**` + expanded `**LeveledNpc**`) and a **unique leaf Npc** summary (`--limit` caps the summary; `--limit=0` = full list).
+- `--inspect-npc=PCM_Serpentis_Serpentis-IV_Predator01` — `**Npc**` **Name** (if strings resolve), **`Race`** EDID, **`DefaultTemplate`** chain, **Keywords**, **DeathItem**; substring match on EditorID or FormKey fragment.
+- `--inspect-game-environment` — prints the same **`GameEnvironment`** as every other command (plugin list, link cache type, effective language, **`LoadOrderFilePath`** when plugins path is set, sample **`Chem_Craft_Amp`** localized name). Requires **`STARFIELD_PLUGINS_TXT`** or **`STARFIELD_LOAD_ORDER`** like all runs; uses **`PluginListingsPathInjection`** + **`WithResolver`** when **`STARFIELD_PLUGINS_TXT`** is set (see **`vendor/Mutagen/.../PluginListingsPathContext.cs`**).
 - `--inspect-husbandry` — organic fauna/flora **FormLists**, builder **COBJ** BOMs, `**PackIn`** placed modules + sample `**EnumerateFormLinks**` (see [outpost-organic-husbandry.md](outpost-organic-husbandry.md)).
 - `--inspect-outpost-harvesters` — harvester `**Transform**` + referrer **PackIn**/**Activator**/**Furniture**, **VMAD**, verbose `**EnumerateFormLinks`**, harvester-ish **Globals** / **CurveTables** / **GameSettings** ([outpost-organic-husbandry.md](outpost-organic-husbandry.md)).
 - `--inspect-outpost-husbandry-cells` — tier **PackIn** → **CELL** → placed; `**OutpostBuilderOrganic*`** **Container** **keywords** + **VMAD** (`**OutpostHarvesterFaunaScript`** / `**FloraScript**`, `**FaunaCreation**` list count) ([outpost-organic-husbandry.md](outpost-organic-husbandry.md)).

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -8,7 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Mutagen.Bethesda.Starfield" Version="0.54.0-alpha.32" />
+    <!-- Local Mutagen (vendor) so we can pass ApplicableArchivePathsOverride for Linux string/BA2 resolution. -->
+    <ProjectReference Include="../../vendor/Mutagen/Mutagen.Bethesda/Mutagen.Bethesda.csproj" />
   </ItemGroup>
 
 </Project>

@@ -166,7 +166,7 @@ This harvester script **sets scanned on spawned pen animals**; **global scan / z
 
 | Topic | In these scripts | For ESM-only tooling |
 |-------|------------------|---------------------|
-| Which **organic AV** the module builds | Set by menu event → stored on script | Offer list likely from **COBJ/builder data** or other records; **not** read from planet tables here |
+| Which **organic AV** the module builds | Set by menu event → stored on script | Offer list likely from **COBJ/builder data** or other records; **not** read from planet tables here. **Hand scanner** already advertises **drops + outpost use** for wild fauna — same story, different **native** UI path (see Misc.ba2 survey below). |
 | **ActorBase** / **Flora** for an AV | `GetActorBaseForResource` / `GetFloraForResource` | Need **game/native** mapping or empirical table; **not** derivable from ESM alone without reverse-engineering those natives |
 | **Herd tier** (`createCount`) | `FaunaCreation` + `HasKeyword` on spawned actor | **Indexable** from container VMAD **`FaunaCreation`** (already in Mutagen dumps) |
 | **Player must scan** wild species | Not enforced here; spawns get **`SetScanned(True)`** | **SQ_ParentScript** (below) owns much of the global scan / planet-trait pipeline; organic **terminal** gating may still be **native UI** |
@@ -185,7 +185,9 @@ Only these two scripts contain the **`OrganicResource`** substring in the compil
 - `scripts/outpostharvesterfaunascript.pex`
 - `scripts/outpostharvesterflorascript.pex`
 
-So there is **no** separate Papyrus “organic resource picker” script that names that property in Misc.ba2 — the workshop flow is almost certainly **native UI** calling into **`OnBuilderMenuSelect(ActorValue)`** on the harvester scripts (already decompiled above).
+So there is **no** separate Papyrus “organic resource picker” script that names that property in Misc.ba2 — the **pen’s** resource choice is almost certainly **native workshop UI** calling into **`OnBuilderMenuSelect(ActorValue)`** on the harvester scripts (already decompiled above).
+
+**Hand scanner (wild fauna):** In play, scanning a creature shows **name, health, biome-style info, harvest/resource**, and the UI **explicitly says** the resource can be **crafted or produced at the outpost** (wording varies). That means the “which organics exist for this species / planet” knowledge is **surfaced in at least two places** — scanner overlay **and** workshop — and is unlikely to live **only** in the pen terminal widget. The implementation is still **unknown** here (native scanner pipeline, **ActorValueInformation**, condition functions, string tables, etc.); it is **not** something the three harvester **`.pex`** files or container VMAD fully spell out. When validating data tooling, compare ESM-derived graphs to **both** the scanner text and the terminal list.
 
 ### `OnBuilderMenuSelect` substring in `.pex` (Misc.ba2)
 

@@ -1,3 +1,6 @@
+# Local Mutagen source (reference only; clone with: git clone --depth 1 -b dev https://github.com/Mutagen-Modding/Mutagen.git vendor/Mutagen)
+vendor/Mutagen/
+
 # Generated / build artifacts
 # Local Champollion output (regenerate via research/outpost-organic-husbandry.md)
 research/decompiled/

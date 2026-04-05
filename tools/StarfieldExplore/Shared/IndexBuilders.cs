@@ -346,5 +346,48 @@ static void ExpandItemKeysFromFormKey(
         itemLikeKeys.Add(fk);
 }
 
+/// <summary>Records whose <see cref="IFormLinkContainerGetter.EnumerateFormLinks"/> (recursive) touches a target FormKey set.</summary>
+static Dictionary<FormKey, List<(string Group, IMajorRecordGetter Rec)>> BuildBacklinksToFormKeys(
+    IStarfieldModGetter mod,
+    IReadOnlySet<FormKey> targets)
+{
+    var map = new Dictionary<FormKey, List<(string Group, IMajorRecordGetter Rec)>>();
+    if (targets.Count == 0) return map;
+
+    void Consider(IMajorRecordGetter rec, string group)
+    {
+        if (rec is not IFormLinkContainerGetter flc) return;
+        try
+        {
+            foreach (var raw in flc.EnumerateFormLinks(true))
+            {
+                if (!TryGetFormKeyFromLinkEnumerationItem(raw, out var fk, out _)) continue;
+                if (fk == default || fk.IsNull || !targets.Contains(fk)) continue;
+                if (!map.TryGetValue(fk, out var list))
+                {
+                    list = [];
+                    map[fk] = list;
+                }
+
+                if (list.Exists(x => x.Rec.FormKey == rec.FormKey)) continue;
+                list.Add((group, rec));
+            }
+        }
+        catch
+        {
+            /* skip broken record */
+        }
+    }
+
+    foreach (var pk in mod.PackIns)
+        Consider(pk, "PackIn");
+    foreach (var a in mod.Activators)
+        Consider(a, "Activator");
+    foreach (var f in mod.Furniture)
+        Consider(f, "Furniture");
+
+    return map;
+}
+
 
 }

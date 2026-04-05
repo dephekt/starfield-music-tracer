@@ -41,6 +41,7 @@ Run from repo: `dotnet run --project tools/StarfieldExplore` (optional `STARFIEL
 - [`decompile_misc_pex.sh`](../tools/decompile_misc_pex.sh) — batch: extract named `scripts/*.pex` from Misc.ba2 into **`research/decompiled/pe/`**, then Champollion → **`research/decompiled/psc/`** (`--preset organic-research` | `minimal`, or positional basenames; **`PEX_OUT`** / **`PSC_OUT`** override dirs).
 - [`starfield_misc_ba2.py`](../tools/starfield_misc_ba2.py) — `iter_misc_ba2_entries` / `extract_named_file` for BA2 research.
 - [`misc_ba2_grep.py`](../tools/misc_ba2_grep.py) — list archive paths whose name or payload contains a substring (e.g. `OrganicResource`, `SetScanned`, `--suffix .pex`).
+- [`localization_ba2_string_grep.py`](../tools/localization_ba2_string_grep.py) — search substrings in null-split entries of **`Starfield - Localization.ba2`** → **`strings/starfield_{lang}.strings`** (optional **`.dlstrings`** / **`.ilstrings`**); see [outpost-papyrus-notes.md](outpost-papyrus-notes.md) hand-scanner string list.
 - [`dump_outpost_husbandry_pex_strings.py`](../tools/dump_outpost_husbandry_pex_strings.py) — extract the three vanilla harvester `**.pex**` and print filtered strings (`--only fauna` / `flora` / `planter` / `all`; `--all` for full ASCII runs).
 
 ## PEX → PSC (Champollion + Wine)

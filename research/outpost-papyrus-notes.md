@@ -176,7 +176,7 @@ This harvester script **sets scanned on spawned pen animals**; **global scan / z
 
 ## Follow-up survey: terminal UI, `OrganicResource`, scan strings (Misc.ba2)
 
-Method: walk **`Starfield - Misc.ba2`** with [`tools/misc_ba2_grep.py`](../tools/misc_ba2_grep.py) / [`iter_misc_ba2_entries`](../tools/starfield_misc_ba2.py); decompile follow-ons with **`./tools/decompile_misc_pex.sh --preset organic-research`** (or Champollion on a single extracted **`.pex`**).
+Method: walk **`Starfield - Misc.ba2`** with [`tools/misc_ba2_grep.py`](../tools/misc_ba2_grep.py) / [`iter_misc_ba2_entries`](../tools/starfield_misc_ba2.py); scanner-facing copy in **`Starfield - Localization.ba2`** via [`tools/localization_ba2_string_grep.py`](../tools/localization_ba2_string_grep.py); decompile follow-ons with **`./tools/decompile_misc_pex.sh --preset organic-research`** (or Champollion on a single extracted **`.pex`**).
 
 ### `OrganicResource` literal in `.pex` bodies
 
@@ -188,6 +188,23 @@ Only these two scripts contain the **`OrganicResource`** substring in the compil
 So there is **no** separate Papyrus “organic resource picker” script that names that property in Misc.ba2 — the **pen’s** resource choice is almost certainly **native workshop UI** calling into **`OnBuilderMenuSelect(ActorValue)`** on the harvester scripts (already decompiled above).
 
 **Hand scanner (wild fauna):** In play, scanning a creature shows **name, health, biome-style info, harvest/resource**, and the UI **explicitly says** the resource can be **crafted or produced at the outpost** (wording varies). That means the “which organics exist for this species / planet” knowledge is **surfaced in at least two places** — scanner overlay **and** workshop — and is unlikely to live **only** in the pen terminal widget. The implementation is still **unknown** here (native scanner pipeline, **ActorValueInformation**, condition functions, string tables, etc.); it is **not** something the three harvester **`.pex`** files or container VMAD fully spell out. When validating data tooling, compare ESM-derived graphs to **both** the scanner text and the terminal list.
+
+### Hand scanner phrases in **`Starfield - Localization.ba2`** (2026 grep)
+
+English UI copy for several scanner lines lives in **`strings/starfield_en.strings`** inside **`Starfield - Localization.ba2`** (null-separated UTF-8 bundle; not the same as **`.STRINGS`** plugin sidecar files). Confirmed literal entries include:
+
+- **`Outpost production allowed`** — matches in-game “can be produced at outpost” style messaging.
+- **`Outpost planet survey production boost`** — related outpost/survey production string (same bundle).
+- **`Temperament:`** row variants: **`Temperament: Peaceful`**, **`Skittish`**, **`Wary`**, **`Fearless`**, **`Aggressive`**, **`Defensive`**, **`Territorial`** (and a bare **`Temperament`** token).
+- **Abilities / regen:** **`Heals rapidly`**, **`Heals very rapidly`**, plus **`Regen Health Slow`** / **`Regen Health Fast`** in the same table (likely internal labels paired with friendly ability text).
+
+Adjacent tokens in the binary blob include section-style prefixes such as **`Resistances:`**, **`Abilities:`**, **`Biomes:`** before **`Outpost production allowed`** — consistent with the scanner block layout.
+
+**Research helper:** [`tools/localization_ba2_string_grep.py`](../tools/localization_ba2_string_grep.py) greps substrings in **`strings/starfield_{lang}.strings`** (optional **`.dlstrings`** / **`.ilstrings`**). Example: `python3 tools/localization_ba2_string_grep.py --contains "Outpost production allowed"`.
+
+**Not done yet:** mapping each token to **conditions**, **keywords**, **ActorValue** ranges, or **Npc** subrecords in **`Starfield.esm`** (next step: xEdit/CK xref, or Mutagen string-hash → record if the engine uses string IDs you can resolve).
+
+**Misc.ba2 noise:** substrings like **`Peaceful`** appear in unrelated **`.pex`** / quest fragments; **`scripts/sfbgs003_sq_bountytarget_aliasscript.pex`** contains **`Temperament`**, **`Skittish`**, **`Peaceful`** together (DLC/adjacent content — verify in-game before treating as scanner source).
 
 ### `OnBuilderMenuSelect` substring in `.pex` (Misc.ba2)
 

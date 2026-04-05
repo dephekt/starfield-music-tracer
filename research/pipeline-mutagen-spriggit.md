@@ -20,6 +20,7 @@ Validate **Spriggit** (YAML/JSON tree export) and **Mutagen** (typed C# API) for
 
 ## Mutagen (C# library)
 
+- **Local source (optional):** shallow clone under **`vendor/Mutagen/`** (gitignored) for API / builder browsing — `**git clone --depth 1 -b dev https://github.com/Mutagen-Modding/Mutagen.git vendor/Mutagen**`. Entry points: `**Mutagen.Bethesda.Core/Environments/GameEnvironmentBuilder.cs**`, `**…/GameEnvironment.cs**`, `**Mutagen.Bethesda.Starfield/**` for game mix-ins.
 - **Package:** `Mutagen.Bethesda.Starfield` — stable **0.54.x** is not on NuGet yet; `**0.54.0-alpha.32`** restores and builds on **net8.0**.
 - `**StarfieldMod.CreateFromBinaryOverlay(ModPath, StarfieldRelease.Starfield)`** loads `**Starfield.esm**` quickly (~1–2s cold, ~7s with `dotnet run` overhead) and exposes major record groups with **real counts** (see below).
 - **COBJ:** exposed as `**ConstructibleObjects`** (not `Constructibles`). `**CreatedObject**` links to the produced form — suitable for recipe/BOM graphs.
@@ -31,6 +32,13 @@ Validate **Spriggit** (YAML/JSON tree export) and **Mutagen** (typed C# API) for
 
 - Accessing `**TranslatedString`** fields (e.g. `**ing.Name**`) triggered resolution via **archive / plugin listings** that expect **Windows `LocalAppData`**-style layout (`PluginListingsPathContext`). On Linux without that environment, `**.Name` can throw**.
 - **Mitigation for tooling:** resolve strings explicitly (e.g. load `**Starfield - Localization.ba2`** / `.strings` the same way as [extract.py](../extract.py)), or set up Mutagen’s string lookup paths for Linux/Wine; or ship **EditorID + FormKey** in v1 of exports and add friendly names in a second pass.
+
+### GameEnvironment on Linux (2026-04)
+
+- `**GameEnvironment.Typical.Construct(GameRelease.Starfield)**` still relies on default **Plugins.txt** discovery → same **LocalAppData** problem on bare Linux.
+- **Recommended:** set **`STARFIELD_PLUGINS_TXT`** to the absolute path of your **`plugins.txt`**, then **`WithResolver`** → **`PluginListingsPathInjection`** implements **`IPluginListingsPathContext`** (see **`vendor/Mutagen/Mutagen.Bethesda.Core/Plugins/Order/DI/PluginListingsPathContext.cs`**). That satisfies archive/string code that still asks for the listings file path even when you also use **`WithLoadOrder`**.
+- **Load order:** omit **`STARFIELD_LOAD_ORDER`** to read order from that **`plugins.txt`**; or set **`STARFIELD_LOAD_ORDER`**=`Plugin1.esm,…` to **override** the file. If neither file nor override: fallback **`WithLoadOrder(Starfield.esm)`** only.
+- **Strings:** if **`Name.String`** still fails, add **`WithStringParameters(StringsReadParameters)`** (**`StringsFolderOverride`** / **`BsaFolderOverride`**) or Proton **`LOCALAPPDATA`**. **`--inspect-game-environment`** ([tooling-catalog.md](tooling-catalog.md)).
 
 ## Suitability vs product direction
 

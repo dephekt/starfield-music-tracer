@@ -1,0 +1,66 @@
+name: Deploy to GitHub Pages
+
+# Only the freeze step runs here. extract.py and fingerprint.py need the
+# Starfield install and the OST, which lived on the self-hosted Codeberg
+# runner as a bind mount -- a GitHub-hosted runner has neither. The site is
+# rebuilt from data/starfield_music.db, which is committed, so refreshing
+# the underlying data stays a local step that ends in a commit of that DB.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "README.md"
+      - "LICENSE"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never cancel a run that is mid-deploy; queue behind it instead.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9
+        with:
+          enable-cache: true
+
+      - name: Freeze static site
+        env:
+          # Must match the Pages project-site subpath, otherwise every
+          # absolute href resolves against the domain root and 404s.
+          SITE_BASE_PATH: /starfield-music-tracer
+        run: uv run --frozen --extra freeze python freeze.py
+
+      - name: Disable Jekyll processing
+        # Nine routes are underscore-prefixed (_MUSExploreSILENT03,
+        # _PIPBOY_MUSIC_BLOCKER, ...) and Jekyll drops paths beginning with
+        # an underscore, so those pages would 404 without this.
+        run: touch _site/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

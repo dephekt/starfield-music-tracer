@@ -1,7 +1,8 @@
 # Generated / build artifacts
 data/starfield_music.db
 data/wav/
-static/clips/
+# static/clips/ is tracked: short comparison/review clips shipped with the app.
+# data/wav/ (the full-length source audio) stays ignored.
 
 # ---> Python
 # Byte-compiled / optimized / DLL files
